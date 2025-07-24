@@ -151,7 +151,7 @@ const assistantMessage = {
       const errorMessage = {
         id: Date.now().toString(),
         role: 'assistant',
-        content: 'Mi dispiace, si è verificato un errore nell\'analisi. Verifica la connessione e riprova.',
+        content: `Errore nell'analisi: ${error.message}. Controlla console per dettagli.`,
         timestamp: new Date(),
         isError: true
       };
