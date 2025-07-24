@@ -123,10 +123,28 @@ export default function InnovationExpertAI() {
       content: r.content.substring(0, 150)
     }))
   },
-  filters: selectedFilters
-})
+filters: selectedFilters
+});
 
-      if (!claudeResponse.ok) {
+const claudeResponse = await fetch('/api/claude-analysis', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    query: currentInput,
+    notionData: {
+      totalResults: notionData.totalResults,
+      insights: notionData.insights.slice(0, 2).map(i => i.substring(0, 100)),
+      bestPractices: notionData.bestPractices.slice(0, 2),
+      results: notionData.results.slice(0, 1).map(r => ({
+        title: r.title,
+        content: r.content.substring(0, 150)
+      }))
+    },
+    filters: selectedFilters
+  })
+});
+
+if (!claudeResponse.ok) {
   throw new Error(`Claude API responded with status: ${claudeResponse.status}`);
 }
 
