@@ -119,19 +119,27 @@ export default function InnovationExpertAI() {
         })
       });
 
-      const result = await claudeResponse.json();
+      if (!claudeResponse.ok) {
+  throw new Error(`Claude API responded with status: ${claudeResponse.status}`);
+}
 
-      const assistantMessage = {
-        id: Date.now().toString(),
-        role: 'assistant',
-        content: result.analysis,
-        timestamp: new Date(),
-        sources: result.sources,
-        notionQuery: {
-          totalResults: notionData.totalResults,
-          filtersApplied: selectedFilters.length
-        }
-      };
+const result = await claudeResponse.json();
+
+if (result.error) {
+  throw new Error(result.error);
+}
+
+const assistantMessage = {
+  id: Date.now().toString(),
+  role: 'assistant',
+  content: result.analysis || 'Analisi completata ma contenuto non disponibile',
+  timestamp: new Date(),
+  sources: result.sources || [],
+  notionQuery: {
+    totalResults: notionData.totalResults || 0,
+    filtersApplied: selectedFilters.length
+  }
+};
 
       setMessages(prev => [...prev, assistantMessage]);
 
