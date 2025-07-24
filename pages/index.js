@@ -108,68 +108,52 @@ export default function InnovationExpertAI() {
       setIsAnalyzing(false);
       setIsLoading(true);
 
-      // Step 2: Send to Claude AI with Notion context
+      // Step 2: Send to Claude AI with Notion context (limited payload)
       const claudeResponse = await fetch('/api/claude-analysis', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-  query: currentInput,
-  notionData: {
-    totalResults: notionData.totalResults,
-    insights: notionData.insights.slice(0, 2).map(i => i.substring(0, 100)),
-    bestPractices: notionData.bestPractices.slice(0, 2),
-    results: notionData.results.slice(0, 1).map(r => ({
-      title: r.title,
-      content: r.content.substring(0, 150)
-    }))
-  },
-filters: selectedFilters
-});
+          query: currentInput,
+          notionData: {
+            totalResults: notionData.totalResults || 0,
+            insights: (notionData.insights || []).slice(0, 2).map(i => i.substring(0, 100)),
+            bestPractices: (notionData.bestPractices || []).slice(0, 2),
+            results: (notionData.results || []).slice(0, 1).map(r => ({
+              title: r.title || 'Untitled',
+              content: (r.content || '').substring(0, 150)
+            }))
+          },
+          filters: selectedFilters
+        })
+      });
 
-const claudeResponse = await fetch('/api/claude-analysis', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({
-    query: currentInput,
-    notionData: {
-      totalResults: notionData.totalResults,
-      insights: notionData.insights.slice(0, 2).map(i => i.substring(0, 100)),
-      bestPractices: notionData.bestPractices.slice(0, 2),
-      results: notionData.results.slice(0, 1).map(r => ({
-        title: r.title,
-        content: r.content.substring(0, 150)
-      }))
-    },
-    filters: selectedFilters
-  })
-});
+      if (!claudeResponse.ok) {
+        throw new Error(`Claude API responded with status: ${claudeResponse.status}`);
+      }
 
-if (!claudeResponse.ok) {
-  throw new Error(`Claude API responded with status: ${claudeResponse.status}`);
-}
+      const result = await claudeResponse.json();
 
-const result = await claudeResponse.json();
+      if (result.error) {
+        throw new Error(result.error);
+      }
 
-if (result.error) {
-  throw new Error(result.error);
-}
-
-const assistantMessage = {
-  id: Date.now().toString(),
-  role: 'assistant',
-  content: result.analysis || 'Analisi completata ma contenuto non disponibile',
-  timestamp: new Date(),
-  sources: result.sources || [],
-  notionQuery: {
-    totalResults: notionData.totalResults || 0,
-    filtersApplied: selectedFilters.length
-  }
-};
+      const assistantMessage = {
+        id: Date.now().toString(),
+        role: 'assistant',
+        content: result.analysis || 'Analisi completata ma contenuto non disponibile',
+        timestamp: new Date(),
+        sources: result.sources || [],
+        notionQuery: {
+          totalResults: notionData.totalResults || 0,
+          filtersApplied: selectedFilters.length
+        }
+      };
 
       setMessages(prev => [...prev, assistantMessage]);
 
     } catch (error) {
-      console.error('Errore:', error);
+      console.error('Errore completo:', error);
+      console.error('Error message:', error.message);
       setIsAnalyzing(false);
       setIsLoading(false);
       
