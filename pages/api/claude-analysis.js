@@ -54,7 +54,7 @@ Rispondi come Innovation Expert con accesso ai database Notion.`;
         "x-api-key": process.env.ANTHROPIC_API_KEY,
       },
       body: JSON.stringify({
-        model: "claude-3-5-sonnet-20241022",
+        model: "claude-sonnet-4-20250514",
         max_tokens: 1500,
         messages: [
           { role: "user", content: contextPrompt }
