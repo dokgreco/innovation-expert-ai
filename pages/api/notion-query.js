@@ -35,17 +35,7 @@ export default async function handler(req, res) {
       
       try {
         // 🔧 FIX 1: Aggiungere filtro di ricerca basato sulla query
-        const searchFilter = query ? {
-          or: [
-            {
-              property: 'Name', // Assumendo che ci sia una property "Name" o "Title"
-              title: {
-                contains: query
-              }
-            },
-            // Aggiungi altri campi di ricerca se necessario
-          ]
-        } : {};
+        const searchFilter = {}; // Rimuoviamo temporaneamente il filtro
 
         // 🔧 FIX 2: Usare il filtro nella query
         const dbResponse = await notion.databases.query({
