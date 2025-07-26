@@ -61,7 +61,11 @@ export default async function handler(req, res) {
         });
 
         console.log(`📊 Database ${dbId}: ${dbResponse.results.length} risultati trovati`);
-
+// 🔍 DEBUG: Struttura database
+if (dbResponse.results.length > 0) {
+  console.log('📋 Prima pagina trovata:', dbResponse.results[0].id);
+  console.log('🏷️ Properties disponibili:', Object.keys(dbResponse.results[0].properties));
+}
         // Get content of each page
         for (const page of dbResponse.results.slice(0, 5)) { // Limitato a 5 per performance
           try {
