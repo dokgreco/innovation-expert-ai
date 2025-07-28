@@ -66,32 +66,32 @@ if (dbResponse.results.length > 0) {
 
             const content = pageContent.results
               .filter(block => 
-                block.type === 'paragraph' && 
-                block.paragraph.rich_text.length > 0 &&
-                // 🔧 FIX 3: Filtrare contenuto per rilevanza
-                block.paragraph.rich_text.some(text => 
-                  text.plain_text.toLowerCase().includes(query.toLowerCase().split(' ')[0])
-                )
-              )
+  block.type === 'paragraph' && 
+  block.paragraph.rich_text.length > 0
+)
               .map(block => block.paragraph.rich_text.map(text => text.plain_text).join(''))
               .join(' ')
               .substring(0, 200); // Limitato per payload
 
             // 🔧 FIX 4: Solo aggiungere se c'è contenuto rilevante
-            if (content.length > 20) {
+            // Calcola relevanceScore PRIMA di usarlo
+            const relevanceScore = calculateRelevance(content, query, extractAllProperties(page));
+
+            if (content.length > 10 || relevanceScore > 5) {
               allResults.push({
-  id: page.id,
-  title: getPageTitle(page),
-  content: content,
-  properties: extractAllProperties(page),  // ← MODIFICATO QUI!
-  database: dbId,
-  relevanceScore: calculateRelevance(content, query)
-});
-// 🔍 DEBUG: Log properties estratte
-if (allResults.length === 1) { // Solo per il primo risultato
-  console.log('🏗️ ESEMPIO Properties estratte:', allResults[0].properties);
-  console.log('📊 Numero properties:', Object.keys(allResults[0].properties).length);
-}
+                id: page.id,
+                title: getPageTitle(page),
+                content: content,
+                properties: extractAllProperties(page),
+                database: dbId,
+                relevanceScore: relevanceScore
+              });
+  
+  // 🔍 DEBUG: Log properties estratte
+  if (allResults.length === 1) { // Solo per il primo risultato
+    console.log('🏗️ ESEMPIO Properties estratte:', allResults[0].properties);
+    console.log('📊 Numero properties:', Object.keys(allResults[0].properties).length);
+  }
             }
           } catch (pageError) {
             console.error('❌ Error fetching page content:', pageError);
@@ -137,23 +137,121 @@ if (allResults.length === 1) { // Solo per il primo risultato
 }
 
 // 🔧 FUNZIONE HELPER: Calcola rilevanza
-function calculateRelevance(content, query) {
+// 🔧 FUNZIONE MIGLIORATA: Calcola rilevanza con scoring avanzato
+function calculateRelevance(content, query, properties = {}) {
   if (!content || !query) return 0;
   
-  const queryWords = query.toLowerCase().split(' ');
-  const contentWords = content.toLowerCase().split(' ');
+  // Normalizza query e content
+  const queryLower = query.toLowerCase();
+  const contentLower = content.toLowerCase();
+  const queryWords = queryLower.split(/\s+/).filter(w => w.length > 2);
   
   let score = 0;
+  
+  // 1. EXACT MATCH BONUS (peso 3x)
+  if (contentLower.includes(queryLower)) {
+    score += queryWords.length * 3;
+  }
+  
+  // 2. WORD MATCH (peso 1x per ogni match)
   queryWords.forEach(word => {
-    if (word.length > 2) { // Ignora parole troppo corte
-      const matches = contentWords.filter(cWord => cWord.includes(word)).length;
-      score += matches;
+    const regex = new RegExp(`\\b${word}`, 'gi');
+    const matches = (contentLower.match(regex) || []).length;
+    score += matches;
+  });
+  
+  // 3. PROPERTY MATCH BONUS (peso 2x)
+  if (properties) {
+    const propertyText = Object.values(properties)
+      .filter(val => typeof val === 'string')
+      .join(' ')
+      .toLowerCase();
+    
+    queryWords.forEach(word => {
+      if (propertyText.includes(word)) {
+        score += 2;
+      }
+    });
+    
+    // 4. PRIORITY FIELDS BONUS
+    const priorityFields = ['JTDs', 'Business Model', 'Value Proposition', 'Technologies'];
+    priorityFields.forEach(field => {
+      if (properties[field] && typeof properties[field] === 'string') {
+        const fieldValue = properties[field].toLowerCase();
+        queryWords.forEach(word => {
+          if (fieldValue.includes(word)) {
+            score += 3; // Bonus extra per campi prioritari
+          }
+        });
+      }
+    });
+  }
+  
+  // 5. KEYWORD DENSITY FACTOR
+  const totalWords = contentLower.split(/\s+/).length;
+  const densityFactor = totalWords > 0 ? (score / totalWords) * 100 : 0;
+  
+  // Calcolo finale: score base + density factor
+  const finalScore = score + (densityFactor * 0.5);
+  
+  // Log per debug (solo per i primi risultati)
+  if (score > 5) {
+    console.log(`📊 Relevance Score: ${finalScore.toFixed(2)} for content starting with: "${content.substring(0, 50)}..."`);
+  }
+  
+  return finalScore;
+}
+
+// 🔧 NUOVA FUNZIONE: Semantic matching per verticali (DB1)
+function calculateVerticalSimilarity(query, properties) {
+  if (!query || !properties) return 0;
+  
+  const queryLower = query.toLowerCase();
+  const queryWords = queryLower.split(/\s+/).filter(w => w.length > 2);
+  let score = 0;
+  
+  // 1. Keywords matching (peso 2x)
+  if (properties.Keywords) {
+    const keywords = properties.Keywords.toLowerCase();
+    queryWords.forEach(word => {
+      if (keywords.includes(word)) {
+        score += 2;
+      }
+    });
+  }
+  
+  // 2. Title/Vertical matching (peso 1x)
+  const titleFields = ['Project Vertical', 'Vertical', 'Innovation Verticals'];
+  titleFields.forEach(field => {
+    if (properties[field]) {
+      const value = properties[field].toLowerCase();
+      queryWords.forEach(word => {
+        if (value.includes(word)) {
+          score += 1;
+        }
+      });
     }
   });
   
-  return score;
+  // 3. Technology alignment (peso 1x)
+  const techFields = ['Technology Adoption & Validation', 'Technologies', 'Tech Stack'];
+  techFields.forEach(field => {
+    if (properties[field]) {
+      const value = properties[field].toLowerCase();
+      queryWords.forEach(word => {
+        if (value.includes(word)) {
+          score += 1;
+        }
+      });
+    }
+  });
+  
+  // Normalizza score 0-100
+  const maxPossibleScore = queryWords.length * 4; // max 4 punti per parola
+  const normalizedScore = maxPossibleScore > 0 ? (score / maxPossibleScore) * 100 : 0;
+  
+  return Math.min(normalizedScore, 100);
 }
-
 // 🔧 FUNZIONE HELPER: Insights specifici per query
 function generateQuerySpecificInsights(results, query) {
   const insights = results
