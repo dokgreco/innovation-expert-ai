@@ -80,13 +80,18 @@ if (dbResponse.results.length > 0) {
             // 🔧 FIX 4: Solo aggiungere se c'è contenuto rilevante
             if (content.length > 20) {
               allResults.push({
-                id: page.id,
-                title: getPageTitle(page),
-                content: content,
-                properties: page.properties,
-                database: dbId,
-                relevanceScore: calculateRelevance(content, query)
-              });
+  id: page.id,
+  title: getPageTitle(page),
+  content: content,
+  properties: extractAllProperties(page),  // ← MODIFICATO QUI!
+  database: dbId,
+  relevanceScore: calculateRelevance(content, query)
+});
+// 🔍 DEBUG: Log properties estratte
+if (allResults.length === 1) { // Solo per il primo risultato
+  console.log('🏗️ ESEMPIO Properties estratte:', allResults[0].properties);
+  console.log('📊 Numero properties:', Object.keys(allResults[0].properties).length);
+}
             }
           } catch (pageError) {
             console.error('❌ Error fetching page content:', pageError);
@@ -191,6 +196,101 @@ function extractRelevantBestPractices(results, query) {
     .slice(0, 5);
 }
 
+
+// 🔧 NUOVA FUNZIONE: Estrae TUTTE le properties in modo leggibile
+function extractAllProperties(page) {
+  const properties = {};
+  
+  // Lista delle properties prioritarie da cercare
+  const priorityFields = [
+    'JTDs', 'Jobs to be Done', 'Jobs-to-be-Done',
+    'Business Model', 'Business Model - Best Practice',
+    'Technology Adoption & Validation', 'Technology Adoption',
+    'KOR', 'Key Results', 'OKR',
+    'Market Type Strategy', 'Market Strategy',
+    'Competing Factors', 'Competition',
+    'Description', 'Descrizione',
+    'Impact', 'Impatto',
+    'Technologies', 'Tecnologie', 'Tech Stack',
+    'Value Proposition', 'Value Prop',
+    'Classification', 'Classificazione', 'Category'
+  ];
+  
+  // Estrai ogni property
+  Object.entries(page.properties).forEach(([key, value]) => {
+    try {
+      switch(value.type) {
+        case 'title':
+          if (value.title && value.title.length > 0) {
+            properties[key] = value.title.map(t => t.plain_text).join('');
+          }
+          break;
+          
+        case 'rich_text':
+          if (value.rich_text && value.rich_text.length > 0) {
+            properties[key] = value.rich_text.map(t => t.plain_text).join('');
+          }
+          break;
+          
+        case 'select':
+          if (value.select) {
+            properties[key] = value.select.name;
+          }
+          break;
+          
+        case 'multi_select':
+          if (value.multi_select && value.multi_select.length > 0) {
+            properties[key] = value.multi_select.map(s => s.name).join(', ');
+          }
+          break;
+          
+        case 'number':
+          if (value.number !== null) {
+            properties[key] = value.number;
+          }
+          break;
+          
+        case 'checkbox':
+          properties[key] = value.checkbox || false;
+          break;
+          
+        case 'url':
+          if (value.url) {
+            properties[key] = value.url;
+          }
+          break;
+          
+        case 'date':
+          if (value.date) {
+            properties[key] = value.date.start;
+          }
+          break;
+          
+        case 'formula':
+          if (value.formula) {
+            properties[key] = value.formula.string || value.formula.number;
+          }
+          break;
+          
+        default:
+          // Log per vedere se ci sono altri tipi
+          console.log(`📝 Tipo property non gestito: ${value.type}`);
+      }
+    } catch (err) {
+      console.error(`❌ Errore estrazione property ${key}:`, err);
+    }
+  });
+  
+  // Log per debug
+  const foundPriorityFields = priorityFields.filter(field => 
+    Object.keys(properties).some(key => key.toLowerCase().includes(field.toLowerCase()))
+  );
+  
+  console.log(`✅ Properties estratte: ${Object.keys(properties).length}`);
+  console.log(`🎯 Priority fields trovati: ${foundPriorityFields.join(', ')}`);
+  
+  return properties;
+}
 function getPageTitle(page) {
   // 🔧 FIX: Migliore estrazione del titolo
   const titleProperty = Object.values(page.properties).find(
