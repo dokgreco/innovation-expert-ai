@@ -48,6 +48,93 @@ function generateConvergenceFramework(methodology) {
 }
 
 // ========== FINE HELPER FUNCTIONS ==========
+// ========== CONTEXT OPTIMIZATION FUNCTION ==========
+
+function optimizeContextForClaude(notionData) {
+  // Obiettivo: mantenere sotto 900 tokens (circa 3600 caratteri)
+  const maxChars = 3600;
+  
+  // Estrai i dati essenziali dalla metodologia
+  const methodology = notionData.methodology || {};
+  const verticals = methodology.step1_verticals || {};
+  const cases = methodology.step2_cases || {};
+  
+  // Prepara oggetto ottimizzato con priorità
+  let optimized = {
+    totalScanned: notionData.totalScanned || 0,
+    processingTime: notionData.processingTime || 'N/A',
+    confidenceScore: notionData.confidenceScore || 0,
+    verticals: {
+      top3: [],
+      framework: {}
+    },
+    cases: {
+      top5: []
+    },
+    convergence: methodology.step3_insights || {}
+  };
+  
+  // PRIORITÀ 1: Verticali (più importanti)
+if (verticals.top3 && verticals.top3.length > 0) {
+  optimized.verticals.top3 = verticals.top3.slice(0, 3).map(v => ({
+    title: v.title || 'Untitled',
+    relevanceScore: v.relevanceScore || 0,
+    properties: {
+      JTDs: (v.properties?.JTDs || v.properties?.['Jobs to be Done'] || '').substring(0, 80), // Ridotto da 150
+      BusinessModel: (v.properties?.['Business Model'] || '').substring(0, 60), // Ridotto da 100
+      Technologies: (v.properties?.Technologies || '').substring(0, 50) // Ridotto da 80
+    }
+  }));
+    
+    // Framework essenziale
+    optimized.verticals.framework = {
+      jtds: (verticals.framework?.jtds || []).slice(0, 2),
+      businessModels: (verticals.framework?.businessModels || []).slice(0, 2),
+      technologies: (verticals.framework?.technologies || []).slice(0, 3),
+      strategies: (verticals.framework?.strategies || []).slice(0, 2)
+    };
+  }
+  
+  // PRIORITÀ 2: Case Studies (meno dettaglio)
+if (cases.top5 && cases.top5.length > 0) {
+  optimized.cases.top5 = cases.top5.slice(0, 3).map(c => ({ // Ridotto da 5 a 3
+    title: c.title || 'Untitled',
+    relevanceScore: c.relevanceScore || 0,
+    properties: {
+      Description: (c.properties?.Description || '').substring(0, 60), // Ridotto da 100
+      Impact: (c.properties?.Impact || '').substring(0, 40) // Ridotto da 80
+    }
+  }));
+}
+  
+  // Calcola dimensione approssimativa
+  const currentSize = JSON.stringify(optimized).length;
+  console.log(`📊 Context size: ${currentSize} chars (target: <${maxChars})`);
+  
+  // Se ancora troppo grande, riduci ulteriormente
+  if (currentSize > maxChars) {
+    console.log('⚠️ Context troppo grande, applico riduzione aggressiva...');
+    
+    // Riduci cases a 3
+    optimized.cases.top5 = optimized.cases.top5.slice(0, 3);
+    
+    // Riduci properties verticali
+    optimized.verticals.top3 = optimized.verticals.top3.map(v => ({
+      title: v.title,
+      relevanceScore: v.relevanceScore,
+      properties: {
+        JTDs: v.properties.JTDs.substring(0, 100)
+      }
+    }));
+    
+    const finalSize = JSON.stringify(optimized).length;
+    console.log(`✅ Context finale: ${finalSize} chars`);
+  }
+  
+  return optimized;
+}
+
+// ========== FINE CONTEXT OPTIMIZATION ==========
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -63,31 +150,39 @@ export default async function handler(req, res) {
     const cases = methodology.step2_cases || {};
     const insights = methodology.step3_insights || {};
 
+    // 🔧 OTTIMIZZAZIONE CONTEXT PER CLAUDE
+    const optimizedData = optimizeContextForClaude(notionData);
+    console.log('🎯 Dati ottimizzati per Claude:', {
+      verticals: optimizedData.verticals.top3.length,
+      cases: optimizedData.cases.top5.length,
+      size: JSON.stringify(optimizedData).length + ' chars'
+    });
+    
     // NUOVO PROMPT STRUTTURATO CON METODOLOGIA 3-STEP
     const contextPrompt = `Sei un Innovation Expert con accesso a una metodologia proprietaria basata su 200+ case histories verificate.
 
-=== ANALISI BASATA SU DATABASE NOTION (${notionData.totalScanned || 0} items analizzati) ===
+=== ANALISI BASATA SU DATABASE NOTION (${optimizedData.totalScanned || 0} items analizzati) ===
 
 QUERY UTENTE: "${query}"
 
 === STEP 1: VERTICALI STRATEGICHE IDENTIFICATE ===
-${formatVerticals(methodology.step1_verticals)}
+${formatVerticals(optimizedData.verticals)}
 
 Framework Estratto dai Verticali:
-- Jobs-to-be-Done: ${verticals.framework?.jtds?.slice(0, 3).join('; ') || 'In fase di identificazione'}
-- Business Models: ${verticals.framework?.businessModels?.slice(0, 3).join('; ') || 'In fase di analisi'}
-- Technology Patterns: ${verticals.framework?.technologies?.slice(0, 3).join('; ') || 'In fase di mappatura'}
-- Market Strategies: ${verticals.framework?.strategies?.slice(0, 3).join('; ') || 'In fase di definizione'}
+- Jobs-to-be-Done: ${optimizedData.verticals.framework?.jtds?.join('; ') || 'In fase di identificazione'}
+- Business Models: ${optimizedData.verticals.framework?.businessModels?.join('; ') || 'In fase di analisi'}
+- Technology Patterns: ${optimizedData.verticals.framework?.technologies?.join('; ') || 'In fase di mappatura'}
+- Market Strategies: ${optimizedData.verticals.framework?.strategies?.join('; ') || 'In fase di definizione'}
 
 === STEP 2: CASE HISTORIES PIÙ RILEVANTI ===
-${formatCaseHistories(cases.top5)}
+${formatCaseHistories(optimizedData.cases.top5)}
 
 Pattern di Convergenza Identificati:
 ${generateConvergenceFramework(methodology)}
 
 === STEP 3: CONFIDENCE SCORE ===
-Affidabilità Analisi: ${notionData.confidenceScore || 'N/A'}%
-Tempo Processing: ${notionData.processingTime || 'N/A'}
+Affidabilità Analisi: ${optimizedData.confidenceScore || 'N/A'}%
+Tempo Processing: ${optimizedData.processingTime || 'N/A'}
 
 === ISTRUZIONI PER OUTPUT STRUTTURATO ===
 
