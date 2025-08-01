@@ -21,6 +21,7 @@ export default async function handler(req, res) {
 
   try {
     const { query, filters } = req.body;
+    const startTime = Date.now(); // Per calcolare il processing time
     
     // 🚨 DEBUG: Log della query ricevuta
     console.log('🔍 Query ricevuta:', query);
@@ -34,6 +35,10 @@ export default async function handler(req, res) {
       if (!dbId) continue;
       
       try {
+        // 🔍 DEBUG DB2
+    if (dbId === databases[1]) {
+      console.log('🔍 DEBUG DB2 - Database ID:', dbId);
+    }
         // 🔧 FIX 1: Aggiungere filtro di ricerca basato sulla query
         const searchFilter = {}; // Rimuoviamo temporaneamente il filtro
 
@@ -50,6 +55,18 @@ export default async function handler(req, res) {
           ]
         });
 
+        // 🔍 DEBUG: Log risultati per database
+    console.log(`📊 Database ${databases.indexOf(dbId) + 1}: ${dbResponse.results.length} pages trovate`);
+    
+    // Se è DB2, mostra i primi 3 titoli
+    if (dbId === databases[1] && dbResponse.results.length > 0) {
+      console.log('🔍 DB2 Sample titles:');
+      dbResponse.results.slice(0, 3).forEach((page, idx) => {
+        const title = getPageTitle(page);
+        console.log(`  ${idx + 1}. ${title}`);
+      });
+    }
+
         console.log(`📊 Database ${dbId}: ${dbResponse.results.length} risultati trovati`);
 // 🔍 DEBUG: Struttura database
 if (dbResponse.results.length > 0) {
@@ -57,13 +74,18 @@ if (dbResponse.results.length > 0) {
   console.log('🏷️ Properties disponibili:', Object.keys(dbResponse.results[0].properties));
 }
         // Get content of each page
-        for (const page of dbResponse.results.slice(0, 5)) { // Limitato a 5 per performance
-          try {
-            const pageContent = await notion.blocks.children.list({
-              block_id: page.id,
-              page_size: 20 // Limitato per evitare payload troppo grandi
-            });
-
+for (const page of dbResponse.results.slice(0, 5)) { // Limitato a 5 per performance
+  // 🔍 DEBUG DB2 Content
+  if (dbId === databases[1]) {
+    const title = getPageTitle(page);
+    console.log(`🔍 DB2 Processing: "${title}"`);
+  }
+  
+  try {
+    const pageContent = await notion.blocks.children.list({
+      block_id: page.id,
+      page_size: 20 // Limitato per evitare payload troppo grandi
+    });
             const content = pageContent.results
               .filter(block => 
   block.type === 'paragraph' && 
@@ -74,25 +96,31 @@ if (dbResponse.results.length > 0) {
               .substring(0, 200); // Limitato per payload
 
             // 🔧 FIX 4: Solo aggiungere se c'è contenuto rilevante
-            // Calcola relevanceScore PRIMA di usarlo
-            const relevanceScore = calculateRelevance(content, query, extractAllProperties(page));
+const allProperties = extractAllProperties(page);
+const relevanceScore = calculateRelevance(content, query, allProperties);
 
-            if (content.length > 10 || relevanceScore > 5) {
-              allResults.push({
-                id: page.id,
-                title: getPageTitle(page),
-                content: content,
-                properties: extractAllProperties(page),
-                database: dbId,
-                relevanceScore: relevanceScore
-              });
-  
+// 🔍 DEBUG: Log per capire perché DB2 non passa
+if (dbId === databases[1]) {
+  console.log(`🔍 DB2 Check - Title: "${getPageTitle(page)}", Content length: ${content.length}, Score: ${relevanceScore.toFixed(2)}`);
+}
+
+// MODIFICATO: Accetta anche se ha properties ricche, non solo content
+if (content.length > 10 || relevanceScore > 5 || Object.keys(allProperties).length > 10) {
+  allResults.push({
+    id: page.id,
+    title: getPageTitle(page),
+    content: content,
+    properties: allProperties,
+    database: dbId,
+    relevanceScore: relevanceScore
+  });
+
   // 🔍 DEBUG: Log properties estratte
   if (allResults.length === 1) { // Solo per il primo risultato
     console.log('🏗️ ESEMPIO Properties estratte:', allResults[0].properties);
     console.log('📊 Numero properties:', Object.keys(allResults[0].properties).length);
   }
-            }
+}
           } catch (pageError) {
             console.error('❌ Error fetching page content:', pageError);
           }
@@ -107,6 +135,17 @@ if (dbResponse.results.length > 0) {
     // 🔧 FIX 5: Ordinare per rilevanza
     allResults.sort((a, b) => (b.relevanceScore || 0) - (a.relevanceScore || 0));
 
+    // 📊 MONITORING: Verifica quale database sta fornendo più risultati
+    console.log('📊 DATABASE USAGE ANALYSIS:');
+    console.log(`DB1 (Verticals): ${allResults.filter(r => r.database === databases[0]).length} results`);
+    console.log(`DB2 (Case Histories): ${allResults.filter(r => r.database === databases[1]).length} results`);
+    console.log(`DB3 (Mixed): ${allResults.filter(r => r.database === databases[2]).length} results`);
+    console.log('Top 5 by relevance:', allResults.slice(0, 5).map(r => ({
+      db: databases.indexOf(r.database) + 1,
+      score: r.relevanceScore?.toFixed(1),
+      title: r.title.substring(0, 50) + '...' // Troncato per leggibilità
+    })));
+
     // 🔧 FIX 6: Generare insights più specifici basati sulla query
     const insights = generateQuerySpecificInsights(allResults, query);
     const bestPractices = extractRelevantBestPractices(allResults, query);
@@ -116,14 +155,47 @@ if (dbResponse.results.length > 0) {
     console.log(`🎯 Insights generati: ${insights.length}`);
     console.log(`📚 Best practices trovate: ${bestPractices.length}`);
 
+    // 🆕 TASK 1.3: Implementazione metodologia 3-step
+    
+    // STEP 1: Identifica verticali (DB1)
+    const verticalResults = allResults
+      .filter(result => result.database === databases[0]) // Solo DB1
+      .sort((a, b) => b.relevanceScore - a.relevanceScore)
+      .slice(0, 3); // TOP 3 verticali
+    
+    // STEP 2: Identifica case histories (DB2 + DB3)
+    const caseResults = allResults
+      .filter(result => result.database === databases[1] || result.database === databases[2])
+      .sort((a, b) => b.relevanceScore - a.relevanceScore)
+      .slice(0, 5); // TOP 5 cases
+    
+    // STEP 3: Pattern convergence analysis
+    const convergencePatterns = analyzeConvergencePatterns(caseResults);
+    
+    // Structured response secondo metodologia proprietaria
     res.status(200).json({
-      totalResults,
-      results: allResults.slice(0, 10), // Limitato per payload
-      insights,
-      bestPractices,
-      methodology: `Metodologia proprietaria di assessment dell'innovazione - Query: "${query}"`,
-      queryProcessed: query, // 🔧 DEBUG: Conferma query processata
-      timestamp: new Date().toISOString()
+      methodology: {
+        step1_verticals: {
+          top3: verticalResults,
+          framework: extractFramework(verticalResults)
+        },
+        step2_cases: {
+          top5: caseResults,
+          convergence: convergencePatterns
+        },
+        step3_insights: {
+          technologies: convergencePatterns.technologies,
+          businessModels: convergencePatterns.businessModels,
+          strategies: convergencePatterns.strategies
+        }
+      },
+      metadata: {
+        totalScanned: totalResults,
+        processingTime: `${Date.now() - startTime}ms`, // Aggiungeremo startTime dopo
+        confidenceScore: calculateConfidenceScore(verticalResults, caseResults),
+        queryProcessed: query,
+        timestamp: new Date().toISOString()
+      }
     });
 
   } catch (error) {
@@ -139,7 +211,8 @@ if (dbResponse.results.length > 0) {
 // 🔧 FUNZIONE HELPER: Calcola rilevanza
 // 🔧 FUNZIONE MIGLIORATA: Calcola rilevanza con scoring avanzato
 function calculateRelevance(content, query, properties = {}) {
-  if (!content || !query) return 0;
+  if (!query) return 0;
+// Rimosso il check su content perché gestiremo i casi vuoti più avanti
   
   // Normalizza query e content
   const queryLower = query.toLowerCase();
@@ -185,6 +258,39 @@ function calculateRelevance(content, query, properties = {}) {
         });
       }
     });
+  }
+  
+  // 🆕 SPECIAL CASE: Se non c'è content, usa properties per matching
+  if (!content || content.length < 10) {
+        
+    // Cerca in TUTTE le properties che potrebbero contenere descrizioni
+    const descriptionFields = [
+      'Description', 'Description (ENG)', 'Descrizione',
+      'Value Proposition', 'Value Proposition (ENG)',
+      'JTDs', 'Impact', 'Impact (ENG)',
+      'Technologies', 'Technologies (ENG)'
+    ];
+     
+    let combinedText = '';
+    descriptionFields.forEach(field => {
+      if (properties[field]) {
+        combinedText += ' ' + properties[field];
+      }
+    });
+    
+    combinedText = combinedText.toLowerCase();
+    
+    // Aumenta significativamente lo score per match senza content
+    queryWords.forEach(word => {
+      if (combinedText.includes(word)) {
+        score += 10; // Peso MOLTO maggiore per compensare mancanza content
+      }
+    });
+    
+    // DEBUG generico (funziona per tutti)
+    if (score > 0) {
+      console.log(`📊 No-content match: "${query.substring(0, 30)}..." → Score: ${score}`);
+    }
   }
   
   // 5. KEYWORD DENSITY FACTOR
@@ -406,4 +512,123 @@ function getPageTitle(page) {
   }
   
   return 'Untitled';
+}
+
+// 🆕 FUNZIONI HELPER PER METODOLOGIA 3-STEP
+
+function extractFramework(verticalResults) {
+  const framework = {
+    jtds: [],
+    businessModels: [],
+    technologies: [],
+    strategies: []
+  };
+  
+  verticalResults.forEach(vertical => {
+    if (vertical.properties) {
+      // Estrai JTDs
+      const jtdFields = ['JTDs', 'Jobs to be Done', 'Jobs-to-be-Done'];
+      jtdFields.forEach(field => {
+        if (vertical.properties[field]) {
+          framework.jtds.push(vertical.properties[field]);
+        }
+      });
+      
+      // Estrai Business Models
+      const bmFields = ['Business Model', 'Business Model - Best Practice'];
+      bmFields.forEach(field => {
+        if (vertical.properties[field]) {
+          framework.businessModels.push(vertical.properties[field]);
+        }
+      });
+      
+      // Estrai Technologies
+      const techFields = ['Technology Adoption & Validation', 'Technologies', 'Tech Stack'];
+      techFields.forEach(field => {
+        if (vertical.properties[field]) {
+          framework.technologies.push(vertical.properties[field]);
+        }
+      });
+      
+      // Estrai Strategies
+      const stratFields = ['Market Type Strategy', 'Market Strategy'];
+      stratFields.forEach(field => {
+        if (vertical.properties[field]) {
+          framework.strategies.push(vertical.properties[field]);
+        }
+      });
+    }
+  });
+  
+  return framework;
+}
+
+function analyzeConvergencePatterns(caseResults) {
+  const patterns = {
+    technologies: [],
+    businessModels: [],
+    strategies: [],
+    lessonsLearned: []
+  };
+  
+  // Conta frequenza di pattern comuni
+  const techFrequency = {};
+  const bmFrequency = {};
+  const stratFrequency = {};
+  
+  caseResults.forEach(caseResult => {
+    if (caseResult.properties) {
+      // Analizza tecnologie
+      const techValue = caseResult.properties.Technologies || caseResult.properties.Tech || '';
+      if (techValue) {
+        const techs = techValue.split(',').map(t => t.trim());
+        techs.forEach(tech => {
+          techFrequency[tech] = (techFrequency[tech] || 0) + 1;
+        });
+      }
+      
+      // Analizza business models
+      const bmValue = caseResult.properties['Business Model'] || '';
+      if (bmValue) {
+        bmFrequency[bmValue] = (bmFrequency[bmValue] || 0) + 1;
+      }
+      
+      // Analizza strategie
+      const stratValue = caseResult.properties.Strategy || caseResult.properties['Market Strategy'] || '';
+      if (stratValue) {
+        stratFrequency[stratValue] = (stratFrequency[stratValue] || 0) + 1;
+      }
+    }
+  });
+  
+  // Identifica pattern convergenti (frequenza >= 2)
+  patterns.technologies = Object.entries(techFrequency)
+    .filter(([tech, count]) => count >= 2)
+    .map(([tech, count]) => tech);
+    
+  patterns.businessModels = Object.entries(bmFrequency)
+    .filter(([bm, count]) => count >= 2)
+    .map(([bm, count]) => bm);
+    
+  patterns.strategies = Object.entries(stratFrequency)
+    .filter(([strat, count]) => count >= 2)
+    .map(([strat, count]) => strat);
+  
+  return patterns;
+}
+
+function calculateConfidenceScore(verticalResults, caseResults) {
+  // Calcola confidence basato su:
+  // 1. Numero di verticali trovate
+  // 2. Relevance score medio
+  // 3. Numero di case studies trovati
+  
+  const verticalScore = Math.min(verticalResults.length / 3, 1) * 30;
+  const avgRelevance = [...verticalResults, ...caseResults]
+    .reduce((sum, r) => sum + (r.relevanceScore || 0), 0) / 
+    (verticalResults.length + caseResults.length || 1);
+  const relevanceScore = Math.min(avgRelevance / 50, 1) * 40;
+  const caseScore = Math.min(caseResults.length / 5, 1) * 30;
+  
+  return Math.round(verticalScore + relevanceScore + caseScore);
 }
