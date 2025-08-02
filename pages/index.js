@@ -5,6 +5,8 @@ import {
   BarChart3, Target, Zap, Building2, Rocket, ChevronRight,
   Clock, Bookmark, X, Plus, Edit3, Check, Loader, Menu
 } from 'lucide-react';
+import AnalysisDisplay from '../components/StructuredAnalysisDisplay';
+import ValidationQuestions from '../components/ValidationQuestions';
 
 export default function InnovationExpertAI() {
   const [messages, setMessages] = useState([
@@ -29,6 +31,8 @@ export default function InnovationExpertAI() {
   const [notionConnected, setNotionConnected] = useState(true);
   
   const messagesEndRef = useRef(null);
+  const [showValidation, setShowValidation] = useState(false);
+const [currentAnalysisId, setCurrentAnalysisId] = useState(null);
 
   // Quick Prompts essenziali
   const quickPrompts = [
@@ -148,17 +152,24 @@ export default function InnovationExpertAI() {
       }
 
       const assistantMessage = {
-        id: (Date.now() + 1).toString(),
-        role: 'assistant',
-        content: result.analysis || 'Analisi completata ma contenuto non disponibile',
-        timestamp: new Date(),
-        sources: result.sources || [],
-        notionQuery: {
-          totalResults: notionData.totalResults || 0,
-          filtersApplied: selectedFilters.length
-        }
-      };
-
+  id: Date.now().toString(),
+  role: 'assistant',
+  content: result.analysis || 'Analisi completata ma contenuto non disponibile',
+  timestamp: new Date(),
+  sources: result.sources || [],
+  parsedSections: result.parsedSections, // <-- AGGIUNGI QUESTA RIGA
+  notionQuery: {
+    totalResults: notionData.totalResults || 0,
+    filtersApplied: selectedFilters.length
+  }
+};
+// 🔍 DEBUG: Verifica cosa arriva al frontend
+console.log('🎯 RESULT DAL BACKEND:', {
+  hasAnalysis: !!result.analysis,
+  hasParsedSections: !!result.parsedSections,
+  validationQuestions: result.parsedSections?.validationQuestions || 'non trovate',
+  questionCount: result.parsedSections?.validationQuestions?.length || 0
+});
       console.log('📝 Aggiungendo messaggio assistant:', assistantMessage);
       setMessages(prev => [...prev, assistantMessage]);
 
@@ -309,7 +320,29 @@ export default function InnovationExpertAI() {
                       : 'bg-white text-gray-800 border border-gray-200 shadow-sm'
                   }`}>
                     <div className="text-sm leading-relaxed whitespace-pre-wrap">{message.content}</div>
-                    
+
+                    {message.parsedSections && (
+  <div className="mt-6 border-t border-gray-200 pt-6">
+    <AnalysisDisplay data={message} />
+    
+    {/* Mostra validation questions se presenti */}
+    {message.parsedSections.validationQuestions && 
+     message.parsedSections.validationQuestions.length > 0 && (
+      <div className="mt-6">
+        <ValidationQuestions 
+          questions={message.parsedSections.validationQuestions}
+          onComplete={(answers) => {
+            console.log('Validation answers:', answers);
+            // Per ora logghiamo solo le risposte
+            // In Sprint 3 chiameremo l'API per generare lo scoring
+            alert('Risposte salvate! Sprint 3 implementerà la generazione dello scoring calibrato.');
+          }}
+        />
+      </div>
+    )}
+  </div>
+)}
+
                     {message.sources && message.sources.length > 0 && (
                       <div className="mt-4 pt-4 border-t border-gray-200">
                         <p className="text-xs font-medium text-gray-600 mb-2">🔍 Database Consultati:</p>

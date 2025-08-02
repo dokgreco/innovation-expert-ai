@@ -48,11 +48,12 @@ function generateConvergenceFramework(methodology) {
 }
 
 // ========== FINE HELPER FUNCTIONS ==========
+
 // ========== CONTEXT OPTIMIZATION FUNCTION ==========
 
 function optimizeContextForClaude(notionData) {
-  // Obiettivo: mantenere sotto 900 tokens (circa 3600 caratteri)
-  const maxChars = 3600;
+  // Obiettivo: mantenere sotto 10,000 caratteri (circa 2,500 tokens)
+  const maxChars = 10000;
   
   // Estrai i dati essenziali dalla metodologia
   const methodology = notionData.methodology || {};
@@ -74,58 +75,61 @@ function optimizeContextForClaude(notionData) {
     convergence: methodology.step3_insights || {}
   };
   
-  // PRIORITÀ 1: Verticali (più importanti)
-if (verticals.top3 && verticals.top3.length > 0) {
-  optimized.verticals.top3 = verticals.top3.slice(0, 3).map(v => ({
-    title: v.title || 'Untitled',
-    relevanceScore: v.relevanceScore || 0,
-    properties: {
-      JTDs: (v.properties?.JTDs || v.properties?.['Jobs to be Done'] || '').substring(0, 80), // Ridotto da 150
-      BusinessModel: (v.properties?.['Business Model'] || '').substring(0, 60), // Ridotto da 100
-      Technologies: (v.properties?.Technologies || '').substring(0, 50) // Ridotto da 80
-    }
-  }));
+  // PRIORITÀ 1: Verticali (manteniamo 3 ma con meno dettaglio)
+  if (verticals.top3 && verticals.top3.length > 0) {
+    optimized.verticals.top3 = verticals.top3.slice(0, 3).map(v => ({
+      title: v.title || 'Untitled',
+      relevanceScore: v.relevanceScore || 0,
+      properties: {
+        JTDs: (v.properties?.JTDs || v.properties?.['Jobs to be Done'] || '').substring(0, 150), // Aumentato da 80
+        BusinessModel: (v.properties?.['Business Model'] || '').substring(0, 100), // Aumentato da 60
+        Technologies: (v.properties?.Technologies || '').substring(0, 80) // Aumentato da 50
+      }
+    }));
     
-    // Framework essenziale
+    // Framework con più dettaglio
     optimized.verticals.framework = {
-      jtds: (verticals.framework?.jtds || []).slice(0, 2),
-      businessModels: (verticals.framework?.businessModels || []).slice(0, 2),
-      technologies: (verticals.framework?.technologies || []).slice(0, 3),
-      strategies: (verticals.framework?.strategies || []).slice(0, 2)
+      jtds: (verticals.framework?.jtds || []).slice(0, 3), // Aumentato da 2
+      businessModels: (verticals.framework?.businessModels || []).slice(0, 3), // Aumentato da 2
+      technologies: (verticals.framework?.technologies || []).slice(0, 4), // Aumentato da 3
+      strategies: (verticals.framework?.strategies || []).slice(0, 3) // Aumentato da 2
     };
   }
   
-  // PRIORITÀ 2: Case Studies (meno dettaglio)
-if (cases.top5 && cases.top5.length > 0) {
-  optimized.cases.top5 = cases.top5.slice(0, 3).map(c => ({ // Ridotto da 5 a 3
-    title: c.title || 'Untitled',
-    relevanceScore: c.relevanceScore || 0,
-    properties: {
-      Description: (c.properties?.Description || '').substring(0, 60), // Ridotto da 100
-      Impact: (c.properties?.Impact || '').substring(0, 40) // Ridotto da 80
-    }
-  }));
-}
+  // PRIORITÀ 2: Case Studies (manteniamo 4 invece di 3)
+  if (cases.top5 && cases.top5.length > 0) {
+    optimized.cases.top5 = cases.top5.slice(0, 4).map(c => ({ // Aumentato da 3 a 4
+      title: c.title || 'Untitled',
+      relevanceScore: c.relevanceScore || 0,
+      properties: {
+        Description: (c.properties?.Description || '').substring(0, 120), // Aumentato da 60
+        Impact: (c.properties?.Impact || '').substring(0, 80), // Aumentato da 40
+        Tech: (c.properties?.Technologies || '').substring(0, 60) // Aggiunto tech
+      }
+    }));
+  }
   
   // Calcola dimensione approssimativa
   const currentSize = JSON.stringify(optimized).length;
   console.log(`📊 Context size: ${currentSize} chars (target: <${maxChars})`);
   
-  // Se ancora troppo grande, riduci ulteriormente
+  // Se ancora troppo grande, riduci progressivamente
   if (currentSize > maxChars) {
-    console.log('⚠️ Context troppo grande, applico riduzione aggressiva...');
+    console.log('⚠️ Context ancora grande, applico riduzione moderata...');
     
-    // Riduci cases a 3
+    // Prima riduzione: cases a 3
     optimized.cases.top5 = optimized.cases.top5.slice(0, 3);
     
-    // Riduci properties verticali
-    optimized.verticals.top3 = optimized.verticals.top3.map(v => ({
-      title: v.title,
-      relevanceScore: v.relevanceScore,
-      properties: {
-        JTDs: v.properties.JTDs.substring(0, 100)
-      }
-    }));
+    // Seconda riduzione: abbrevia descriptions
+    if (JSON.stringify(optimized).length > maxChars) {
+      optimized.cases.top5 = optimized.cases.top5.map(c => ({
+        ...c,
+        properties: {
+          Description: c.properties.Description.substring(0, 80),
+          Impact: c.properties.Impact.substring(0, 50)
+        }
+      }));
+    }
     
     const finalSize = JSON.stringify(optimized).length;
     console.log(`✅ Context finale: ${finalSize} chars`);
@@ -135,6 +139,141 @@ if (cases.top5 && cases.top5.length > 0) {
 }
 
 // ========== FINE CONTEXT OPTIMIZATION ==========
+
+// ========== OUTPUT PARSER FUNCTION ==========
+
+function parseMethodologyResponse(claudeResponse) {
+  if (!claudeResponse || typeof claudeResponse !== 'string') {
+    console.error('❌ Invalid Claude response for parsing');
+    return null;
+  }
+
+  // Funzione helper per estrarre sezioni
+  function extractSection(text, startMarker, endMarker = null) {
+    const startIndex = text.indexOf(startMarker);
+    if (startIndex === -1) return '';
+    
+    const contentStart = startIndex + startMarker.length;
+    
+    if (endMarker) {
+      const endIndex = text.indexOf(endMarker, contentStart);
+      if (endIndex === -1) return text.substring(contentStart).trim();
+      return text.substring(contentStart, endIndex).trim();
+    }
+    
+    // Se no endMarker, prendi fino alla prossima sezione principale (cerca emoji)
+    const nextSectionRegex = /\n[🎯🔄📚🚀📊]/;
+    const match = text.substring(contentStart).search(nextSectionRegex);
+    
+    if (match === -1) return text.substring(contentStart).trim();
+    return text.substring(contentStart, contentStart + match).trim();
+  }
+
+  // Estrai le validation questions
+function extractQuestions(text) {
+  const questions = [];
+  const dimensions = [
+    'Jobs-to-be-Done Alignment',
+    'Technology & Data Strategy',
+    'Business Model Approach',
+    'Market Entry Strategy',
+    'Competitive Positioning',
+    'Partnership Potential'
+  ];
+  
+  // Cerca la sezione PARTE 2
+  const parte2Index = text.indexOf('PARTE 2:');
+  if (parte2Index === -1) {
+    console.warn('⚠️ PARTE 2 non trovata nel testo');
+    return questions;
+  }
+  
+  const parte2Text = text.substring(parte2Index);
+  
+  dimensions.forEach((dimension, index) => {
+    // Pattern più flessibili per trovare le domande
+    const patterns = [
+      new RegExp(`${index + 1}\\.\\s*${dimension}[:\\s]+([^?]+\\?)`, 'i'),
+      new RegExp(`${dimension}[:\\s]+([^?]+\\?)`, 'i'),
+      new RegExp(`\\*\\*${dimension}\\*\\*[:\\s]+([^?]+\\?)`, 'i')
+    ];
+    
+    let match = null;
+    for (const pattern of patterns) {
+      match = parte2Text.match(pattern);
+      if (match) break;
+    }
+    
+    if (match) {
+      questions.push({
+        dimension,
+        question: match[1].trim(),
+        options: ['Sì, allineato con questa direzione', 'No, approccio diverso']
+      });
+    }
+  });
+  
+  console.log(`📋 Domande estratte: ${questions.length}/6`);
+  return questions;
+}
+// Funzione per pulire i marker residui
+function cleanSection(text) {
+  if (!text) return '';
+  return text
+    .replace(/###\s*$/g, '')  // Rimuovi ### alla fine
+    .replace(/##\s*$/g, '')   // Rimuovi ## alla fine
+    .replace(/\n\s*\n\s*\n/g, '\n\n')  // Riduci spazi multipli
+    .trim();
+}
+  try {
+    // Parse delle sezioni principali
+const sections = {
+  vertical: cleanSection(extractSection(
+    claudeResponse, 
+    '🎯 VERTICALE STRATEGICA PRINCIPALE',
+    '🔄 PATTERN STRATEGICI CONVERGENTI'
+  )),
+  patterns: cleanSection(extractSection(
+    claudeResponse,
+    '🔄 PATTERN STRATEGICI CONVERGENTI',
+    '📚 CASE STUDIES DI RIFERIMENTO'
+  )),
+  cases: cleanSection(extractSection(
+    claudeResponse,
+    '📚 CASE STUDIES DI RIFERIMENTO',
+    '🚀 ROADMAP OPERATIVA'
+  )),
+  roadmap: cleanSection(extractSection(
+    claudeResponse,
+    '🚀 ROADMAP OPERATIVA',
+    '📊 SUCCESS METRICS'
+  )),
+  metrics: cleanSection(extractSection(
+    claudeResponse,
+    '📊 SUCCESS METRICS',
+    'PARTE 2:'
+  )),
+  validationQuestions: extractQuestions(claudeResponse)
+};
+
+    // Log per debug
+    console.log('📝 Parsed sections:', {
+      vertical: sections.vertical.substring(0, 50) + '...',
+      patterns: sections.patterns.substring(0, 50) + '...',
+      cases: sections.cases.substring(0, 50) + '...',
+      roadmap: sections.roadmap.substring(0, 50) + '...',
+      metrics: sections.metrics.substring(0, 50) + '...',
+      questions: sections.validationQuestions.length
+    });
+
+    return sections;
+  } catch (error) {
+    console.error('❌ Error parsing Claude response:', error);
+    return null;
+  }
+}
+
+// ========== FINE OUTPUT PARSER ==========
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -169,10 +308,10 @@ QUERY UTENTE: "${query}"
 ${formatVerticals(optimizedData.verticals)}
 
 Framework Estratto dai Verticali:
-- Jobs-to-be-Done: ${optimizedData.verticals.framework?.jtds?.join('; ') || 'In fase di identificazione'}
-- Business Models: ${optimizedData.verticals.framework?.businessModels?.join('; ') || 'In fase di analisi'}
-- Technology Patterns: ${optimizedData.verticals.framework?.technologies?.join('; ') || 'In fase di mappatura'}
-- Market Strategies: ${optimizedData.verticals.framework?.strategies?.join('; ') || 'In fase di definizione'}
+- Jobs-to-be-Done: ${optimizedData.verticals.framework?.jtds?.slice(0, 3).join('; ') || 'In fase di identificazione'}
+- Business Models: ${optimizedData.verticals.framework?.businessModels?.slice(0, 3).join('; ') || 'In fase di analisi'}
+- Technology Patterns: ${optimizedData.verticals.framework?.technologies?.slice(0, 3).join('; ') || 'In fase di mappatura'}
+- Market Strategies: ${optimizedData.verticals.framework?.strategies?.slice(0, 3).join('; ') || 'In fase di definizione'}
 
 === STEP 2: CASE HISTORIES PIÙ RILEVANTI ===
 ${formatCaseHistories(optimizedData.cases.top5)}
@@ -268,7 +407,22 @@ Ricorda: stai analizzando "${query}" basandoti su dati reali da ${notionData.tot
 
     const data = await response.json();
     const analysis = data.content[0].text;
+    // 🔍 DEBUG: Verifica output Claude
+console.log('📊 CLAUDE RAW RESPONSE LENGTH:', analysis.length);
+console.log('🔍 CERCA PARTE 2:', analysis.includes('PARTE 2'));
+console.log('📝 ULTIMI 500 CARATTERI:', analysis.substring(analysis.length - 500));
 
+// Se trovi PARTE 2, mostra dove si trova
+if (analysis.includes('PARTE 2')) {
+  const parte2Index = analysis.indexOf('PARTE 2');
+  console.log('✅ PARTE 2 trovata alla posizione:', parte2Index);
+  console.log('📄 Contenuto dopo PARTE 2:', analysis.substring(parte2Index, parte2Index + 200));
+}
+// Parse della risposta strutturata
+const parsedAnalysis = parseMethodologyResponse(analysis);
+if (!parsedAnalysis) {
+  console.warn('⚠️ Could not parse structured response, returning raw analysis');
+}
     // Prepare sources information
     const sources = [
       { 
@@ -286,11 +440,16 @@ Ricorda: stai analizzando "${query}" basandoti su dati reali da ${notionData.tot
     ];
 
     res.status(200).json({
-      analysis,
-      sources,
-      notionResultsUsed: notionData.results.length,
-      bestPracticesApplied: notionData.bestPractices.length
-    });
+  analysis,
+  parsedSections: parsedAnalysis, // Aggiungi le sezioni parsate
+  sources,
+  notionResultsUsed: notionData.results?.length || 0,
+  bestPracticesApplied: notionData.bestPractices?.length || 0,
+  metadata: {
+    structured: parsedAnalysis !== null,
+    sectionsFound: parsedAnalysis ? Object.keys(parsedAnalysis).filter(k => parsedAnalysis[k]).length : 0
+  }
+});
 
   } catch (error) {
     console.error('Claude Analysis Error:', error);
