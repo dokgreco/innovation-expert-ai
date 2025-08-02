@@ -33,6 +33,8 @@ export default function InnovationExpertAI() {
   const messagesEndRef = useRef(null);
   const [showValidation, setShowValidation] = useState(false);
 const [currentAnalysisId, setCurrentAnalysisId] = useState(null);
+const [validationAnswers, setValidationAnswers] = useState({});
+const [scoringData, setScoringData] = useState(null);
 
   // Quick Prompts essenziali
   const quickPrompts = [
@@ -331,18 +333,130 @@ console.log('🎯 RESULT DAL BACKEND:', {
       <div className="mt-6">
         <ValidationQuestions 
           questions={message.parsedSections.validationQuestions}
-          onComplete={(answers) => {
-            console.log('Validation answers:', answers);
-            // Per ora logghiamo solo le risposte
-            // In Sprint 3 chiameremo l'API per generare lo scoring
-            alert('Risposte salvate! Sprint 3 implementerà la generazione dello scoring calibrato.');
-          }}
+          onComplete={async (answers) => {
+  console.log('Validation answers:', answers);
+  
+  // Salva le risposte
+  setValidationAnswers(answers);
+  
+  // Mostra loading
+  setIsLoading(true);
+  
+  try {
+    // Prepara i dati per lo scoring
+    const analysisData = {
+      analysis: message.content,
+      validationQuestions: message.parsedSections.validationQuestions,
+      vertical: message.parsedSections.vertical,
+      patterns: message.parsedSections.patterns,
+      cases: message.parsedSections.cases
+    };
+    
+    // Chiama l'API di scoring
+    const response = await fetch('/api/generate-scoring', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        analysisData: analysisData,
+        validationAnswers: answers
+      })
+    });
+    
+    if (!response.ok) {
+      throw new Error('Errore nella generazione dello scoring');
+    }
+    
+    const result = await response.json();
+    
+    // Aggiungi il messaggio con lo scoring
+    const scoringMessage = {
+      id: Date.now().toString(),
+      role: 'assistant',
+      content: 'Ho generato lo scoring calibrato basato sulla tua validazione:',
+      timestamp: new Date(),
+      scoringData: result.scoring,
+      isScoring: true
+    };
+    
+    setMessages(prev => [...prev, scoringMessage]);
+    
+  } catch (error) {
+    console.error('Error generating scoring:', error);
+    alert('Errore nella generazione dello scoring. Riprova.');
+  } finally {
+    setIsLoading(false);
+  }
+}}
         />
       </div>
     )}
   </div>
 )}
+{/* Mostra scoring se presente */}
+{message.isScoring && message.scoringData && (
+  <div className="mt-6 space-y-6">
+    {/* Overall Score Card */}
+    <div className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white p-6 rounded-lg">
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="text-lg font-bold">🎯 Innovation Score</h3>
+          <p className="text-indigo-100 text-sm">Calibrato su benchmark reali</p>
+        </div>
+        <div className="text-right">
+          <div className="text-3xl font-bold">{message.scoringData.overall.score}/10</div>
+          <div className="text-indigo-200">{message.scoringData.overall.rating}</div>
+        </div>
+      </div>
+    </div>
 
+    {/* Dimensions */}
+    <div className="bg-white border border-gray-200 rounded-lg p-4">
+      <h4 className="font-semibold text-gray-900 mb-4">📊 Scoring per Dimensione</h4>
+      <div className="space-y-4">
+        {message.scoringData.dimensions.map((dim, idx) => (
+          <div key={idx}>
+            <div className="flex justify-between items-center mb-1">
+              <span className="text-sm font-medium text-gray-700">{dim.name}</span>
+              <span className="text-sm font-bold text-indigo-600">{dim.score}/10</span>
+            </div>
+            <div className="w-full bg-gray-200 rounded-full h-2 mb-2">
+              <div 
+                className="bg-indigo-600 h-2 rounded-full"
+                style={{ width: `${(dim.score / 10) * 100}%` }}
+              ></div>
+            </div>
+            <p className="text-xs text-gray-600">{dim.rationale}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+
+    {/* Risks */}
+    <div className="bg-white border border-gray-200 rounded-lg p-4">
+      <h4 className="font-semibold text-gray-900 mb-4">⚠️ Risk Assessment</h4>
+      <div className="space-y-3">
+        {message.scoringData.risks.map((risk, idx) => (
+          <div key={idx} className="border-l-4 border-yellow-400 pl-4">
+            <div className="flex items-center gap-2 mb-1">
+              <span className="font-medium text-gray-900">{risk.factor}</span>
+              <span className={`text-xs px-2 py-1 rounded-full ${
+                risk.level === 'Alto' ? 'bg-red-100 text-red-800' : 
+                risk.level === 'Medio' ? 'bg-yellow-100 text-yellow-800' : 
+                'bg-green-100 text-green-800'
+              }`}>
+                {risk.level}
+              </span>
+            </div>
+            <p className="text-sm text-gray-600">{risk.description}</p>
+            <p className="text-sm text-indigo-600 mt-1">
+              <strong>Mitigazione:</strong> {risk.mitigation}
+            </p>
+          </div>
+        ))}
+      </div>
+    </div>
+  </div>
+)}
                     {message.sources && message.sources.length > 0 && (
                       <div className="mt-4 pt-4 border-t border-gray-200">
                         <p className="text-xs font-medium text-gray-600 mb-2">🔍 Database Consultati:</p>

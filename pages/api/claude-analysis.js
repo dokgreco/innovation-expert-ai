@@ -182,11 +182,16 @@ function extractQuestions(text) {
   ];
   
   // Cerca la sezione PARTE 2
-  const parte2Index = text.indexOf('PARTE 2:');
-  if (parte2Index === -1) {
-    console.warn('⚠️ PARTE 2 non trovata nel testo');
-    return questions;
-  }
+  // Cerca PARTE 2 in vari formati
+let parte2Index = text.indexOf('PARTE 2:');
+if (parte2Index === -1) parte2Index = text.indexOf('PARTE 2 :');
+if (parte2Index === -1) parte2Index = text.indexOf('VALIDATION QUESTIONS');
+if (parte2Index === -1) parte2Index = text.indexOf('DOMANDE DI VALIDAZIONE');
+if (parte2Index === -1) {
+  console.warn('⚠️ PARTE 2 non trovata, cerco le dimensioni direttamente...');
+  // Usa tutto il testo come fallback
+  parte2Index = 0;
+}
   
   const parte2Text = text.substring(parte2Index);
   
