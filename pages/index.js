@@ -3,10 +3,19 @@ import {
   Send, Bot, User, Database, Brain, Lightbulb, TrendingUp, 
   Filter, Save, History, Star, Search, FileText,
   BarChart3, Target, Zap, Building2, Rocket, ChevronRight,
-  Clock, Bookmark, X, Plus, Edit3, Check, Loader, Menu
+  Clock, Bookmark, X, Plus, Edit3, Check, Loader, Menu,
+  Award, CheckCircle
 } from 'lucide-react';
 import AnalysisDisplay from '../components/StructuredAnalysisDisplay';
 import ValidationQuestions from '../components/ValidationQuestions';
+
+// Progress steps configuration
+const steps = [
+  { num: 1, label: "Input", icon: <Edit3 size={16} /> },
+  { num: 2, label: "Analysis", icon: <Search size={16} /> },
+  { num: 3, label: "Validation", icon: <CheckCircle size={16} /> },
+  { num: 4, label: "Scoring", icon: <Award size={16} /> }
+];
 
 export default function InnovationExpertAI() {
   const [messages, setMessages] = useState([
@@ -35,7 +44,9 @@ export default function InnovationExpertAI() {
 const [currentAnalysisId, setCurrentAnalysisId] = useState(null);
 const [validationAnswers, setValidationAnswers] = useState({});
 const [scoringData, setScoringData] = useState(null);
-
+  const [currentStep, setCurrentStep] = useState(1);
+  const [stepHistory, setStepHistory] = useState([1]);
+  const [deepDiveMode, setDeepDiveMode] = useState(null);
   // Quick Prompts essenziali
   const quickPrompts = [
     {
@@ -63,7 +74,18 @@ const [scoringData, setScoringData] = useState(null);
       icon: <Target size={14} />
     }
   ];
-
+// Navigation function for steps
+  const navigateToStep = (targetStep) => {
+    if (targetStep <= Math.max(...stepHistory) + 1) {
+      setCurrentStep(targetStep);
+      setDeepDiveMode(null);
+      if (!stepHistory.includes(targetStep)) {
+        setStepHistory([...stepHistory, targetStep]);
+      }
+      // Scroll to step will be implemented later
+      // setTimeout(() => scrollToStep(targetStep), 100);
+    }
+  };
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
@@ -93,11 +115,16 @@ const [scoringData, setScoringData] = useState(null);
     setMessages(prev => [...prev, userMessage]);
     if (!customPrompt) setInput('');
     setIsAnalyzing(true);
+    setCurrentStep(2);
     setIsLoading(false);
 
     if (!promptHistory.includes(currentInput)) {
       setPromptHistory(prev => [currentInput, ...prev.slice(0, 9)]);
     }
+    // Aggiorna step history se non già presente
+if (!stepHistory.includes(2)) {
+  setStepHistory([...stepHistory, 2]);
+}
 
     try {
       console.log('🚀 Invio query a Notion API:', currentInput);
@@ -301,10 +328,51 @@ console.log('🎯 RESULT DAL BACKEND:', {
             Salva
           </button>
         </div>
-
+{/* Progress Indicator */}
+        <div className="flex items-center justify-center space-x-4 p-4 bg-gradient-to-r from-indigo-50 to-purple-50 border-b border-gray-200">
+          {steps.map((item, idx) => (
+            <div key={item.num} className="flex items-center">
+              <button
+                onClick={() => navigateToStep(item.num)}
+                disabled={item.num > Math.max(...stepHistory) + 1}
+                className={`flex items-center justify-center w-10 h-10 rounded-full border-2 transition-all ${
+                  currentStep >= item.num 
+                    ? 'bg-indigo-600 border-indigo-600 text-white hover:bg-indigo-700' 
+                    : item.num <= Math.max(...stepHistory) + 1
+                    ? 'bg-white border-gray-300 text-gray-600 hover:border-indigo-400 cursor-pointer'
+                    : 'bg-white border-gray-300 text-gray-400 cursor-not-allowed'
+                }`}>
+                {currentStep > item.num ? <Check size={16} /> : item.icon}
+              </button>
+              <span className={`ml-2 text-sm font-medium ${
+                currentStep >= item.num ? 'text-indigo-600' : 'text-gray-400'
+              }`}>
+                {item.label}
+              </span>
+              {idx < 3 && (
+                <ChevronRight className={`mx-3 ${
+                  currentStep > item.num ? 'text-indigo-600' : 'text-gray-300'
+                }`} size={16} />
+              )}
+            </div>
+          ))}
+        </div>
         {/* Messages Area */}
         <div className="flex-1 overflow-y-auto p-4">
           <div className="max-w-full space-y-6">
+            {/* Step-based content display */}
+            {currentStep === 1 && (
+              <div className="max-w-4xl mx-auto text-center">
+                <h1 className="text-3xl font-bold text-gray-900 mb-4">Innovation Pattern Analysis</h1>
+                <p className="text-gray-600 mb-8">
+                  Descrivi il tuo progetto innovativo per una valutazione basata su 200+ case histories e metodologia proprietaria.
+                </p>
+              </div>
+            )}
+            
+            {/* Original messages display for steps 2+ */}
+            {currentStep > 1 && (
+              <>
             {messages.map((message) => (
               <div key={message.id} className="flex gap-3">
                 {message.role === 'assistant' && (
@@ -328,72 +396,104 @@ console.log('🎯 RESULT DAL BACKEND:', {
     <AnalysisDisplay data={message} />
     
     {/* Mostra validation questions se presenti */}
-    {message.parsedSections.validationQuestions && 
-     message.parsedSections.validationQuestions.length > 0 && (
-      <div className="mt-6">
-        <ValidationQuestions 
-          questions={message.parsedSections.validationQuestions}
-          onComplete={async (answers) => {
-  console.log('Validation answers:', answers);
-  
-  // Salva le risposte
-  setValidationAnswers(answers);
-  
-  // Mostra loading
-  setIsLoading(true);
-  
-  try {
-    // Prepara i dati per lo scoring
-    const analysisData = {
-      analysis: message.content,
-      validationQuestions: message.parsedSections.validationQuestions,
-      vertical: message.parsedSections.vertical,
-      patterns: message.parsedSections.patterns,
-      cases: message.parsedSections.cases
-    };
-    
-    // Chiama l'API di scoring
-    const response = await fetch('/api/generate-scoring', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        analysisData: analysisData,
-        validationAnswers: answers
-      })
-    });
-    
-    if (!response.ok) {
-      throw new Error('Errore nella generazione dello scoring');
-    }
-    
-    const result = await response.json();
-    
-    // Aggiungi il messaggio con lo scoring
-    const scoringMessage = {
-      id: Date.now().toString(),
-      role: 'assistant',
-      content: 'Ho generato lo scoring calibrato basato sulla tua validazione:',
-      timestamp: new Date(),
-      scoringData: result.scoring,
-      isScoring: true
-    };
-    
-    setMessages(prev => [...prev, scoringMessage]);
-    
-  } catch (error) {
-    console.error('Error generating scoring:', error);
-    alert('Errore nella generazione dello scoring. Riprova.');
-  } finally {
-    setIsLoading(false);
-  }
-}}
-        />
-      </div>
-    )}
+{message.parsedSections.validationQuestions && 
+ message.parsedSections.validationQuestions.length > 0 && 
+ currentStep === 2 && (
+  <div className="mt-6">
+    <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-4 mb-4">
+      <p className="text-sm text-indigo-800">
+        ✅ Analisi completata! Procedi con la validazione per generare lo scoring calibrato.
+      </p>
+    </div>
+    <button
+      onClick={() => {
+        setCurrentStep(3);
+        if (!stepHistory.includes(3)) {
+          setStepHistory([...stepHistory, 3]);
+        }
+      }}
+      className="w-full px-4 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors flex items-center justify-center gap-2"
+    >
+      <CheckCircle size={20} />
+      Procedi alla Validazione
+    </button>
+  </div>
+)}
+
+{/* Mostra validation questions in Step 3 */}
+{message.parsedSections.validationQuestions && 
+ message.parsedSections.validationQuestions.length > 0 && 
+ currentStep === 3 && (
+  <div className="mt-6">
+    <ValidationQuestions 
+      questions={message.parsedSections.validationQuestions}
+      onComplete={async (answers) => {
+        console.log('Validation answers:', answers);
+        
+        // Salva le risposte
+        setValidationAnswers(answers);
+        
+        // Mostra loading
+        setIsLoading(true);
+        
+        try {
+          // Prepara i dati per lo scoring
+          const analysisData = {
+            analysis: message.content,
+            validationQuestions: message.parsedSections.validationQuestions,
+            vertical: message.parsedSections.vertical,
+            patterns: message.parsedSections.patterns,
+            cases: message.parsedSections.cases
+          };
+          
+          // Chiama l'API di scoring
+          const response = await fetch('/api/generate-scoring', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              analysisData: analysisData,
+              validationAnswers: answers
+            })
+          });
+          
+          if (!response.ok) {
+            throw new Error('Errore nella generazione dello scoring');
+          }
+          
+          const result = await response.json();
+          
+          // Passa automaticamente a Step 4
+          setCurrentStep(4);
+          if (!stepHistory.includes(4)) {
+            setStepHistory([...stepHistory, 4]);
+          }
+          
+          // Aggiungi il messaggio con lo scoring
+          const scoringMessage = {
+            id: Date.now().toString(),
+            role: 'assistant',
+            content: 'Ho generato lo scoring calibrato basato sulla tua validazione:',
+            timestamp: new Date(),
+            scoringData: result.scoring,
+            isScoring: true
+          };
+          
+          setMessages(prev => [...prev, scoringMessage]);
+          
+        } catch (error) {
+          console.error('Error generating scoring:', error);
+          alert('Errore nella generazione dello scoring. Riprova.');
+        } finally {
+          setIsLoading(false);
+        }
+      }}
+    />
+  </div>
+)}
   </div>
 )}
 {/* Mostra scoring se presente */}
-{message.isScoring && message.scoringData && (
+{message.isScoring && message.scoringData && currentStep === 4 && (
   <div className="mt-6 space-y-6">
     {/* Overall Score Card */}
     <div className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white p-6 rounded-lg">
@@ -524,6 +624,8 @@ console.log('🎯 RESULT DAL BACKEND:', {
               </div>
             )}
 
+            </>
+            )}
             <div ref={messagesEndRef} />
           </div>
         </div>
