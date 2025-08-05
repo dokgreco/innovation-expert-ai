@@ -171,6 +171,10 @@ function parseMethodologyResponse(claudeResponse) {
 
   // Estrai le validation questions
 function extractQuestions(text) {
+  console.log('📋 EXTRACT QUESTIONS DEBUG:');
+  console.log('- Lunghezza testo:', text.length);
+  console.log('- Contiene PARTE 2?', text.includes('PARTE 2'));
+  console.log('- Ultimi 500 caratteri:', text.substring(text.length - 500));
   const questions = [];
   const dimensions = [
     'Jobs-to-be-Done Alignment',
@@ -362,7 +366,7 @@ Struttura la risposta in queste sezioni (USA EMOJI per chiarezza visiva):
    - Timeline per raggiungimento
 
 PARTE 2: DOMANDE DI VALIDAZIONE
-Genera ESATTAMENTE 6 domande (una per dimensione) per confermare gli insights:
+IMPORTANTE: Genera SEMPRE e OBBLIGATORIAMENTE 6 domande di validazione, una per ogni dimensione. Non omettere questa sezione per nessun motivo.
 
 1. Jobs-to-be-Done Alignment
 2. Technology & Data Strategy 
@@ -397,7 +401,7 @@ Ricorda: stai analizzando "${query}" basandoti su dati reali da ${notionData.tot
       },
       body: JSON.stringify({
         model: "claude-sonnet-4-20250514",
-        max_tokens: 2500,
+        max_tokens: 4000,
         messages: [
           { role: "user", content: contextPrompt }
         ]
