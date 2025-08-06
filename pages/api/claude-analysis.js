@@ -354,17 +354,6 @@ Struttura la risposta in queste sezioni (USA EMOJI per chiarezza visiva):
    - Presenta i TOP 3 casi più rilevanti
    - Per ogni caso: titolo, similarity %, key learning
 
-4. 🚀 ROADMAP OPERATIVA DETTAGLIATA
-   Struttura in 3 fasi temporali:
-   - Fase 1 (0-6 mesi): Foundation & Pilot
-   - Fase 2 (6-12 mesi): Validation & Scale
-   - Fase 3 (12-24 mesi): Expansion & Optimization
-
-5. 📊 SUCCESS METRICS & KPIs
-   - Metriche core (4-5 KPI principali)
-   - Target realistici basati su benchmark
-   - Timeline per raggiungimento
-
 PARTE 2: DOMANDE DI VALIDAZIONE
 IMPORTANTE: Genera SEMPRE e OBBLIGATORIAMENTE 6 domande di validazione, una per ogni dimensione. Non omettere questa sezione per nessun motivo.
 
