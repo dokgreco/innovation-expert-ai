@@ -81,42 +81,42 @@ const [sectionLoading, setSectionLoading] = useState({});
   ];
 
   // Deep Dive sections per future implementazioni interattive
-  const deepDiveSections = [
+const deepDiveSections = [
+  { 
+    icon: <Target size={14} />, 
+    text: "Jobs-to-be-Done Execution", 
+    key: "strategic",
+    subtitle: "From identification to market validation",
+    count: 0
+  },
+  { 
+    icon: <Zap size={14} />, 
+    text: "Competitive Positioning", 
+    key: "competitive",
+    subtitle: "Differentiation & moat building",
+    count: 0
+  },
+  { 
+    icon: <Rocket size={14} />, 
+    text: "Market Strategy Tactics", 
+    key: "roadmap",
+    subtitle: "GTM execution & pilot management",
+    count: 0
+  },
     { 
-      icon: <Target size={14} />, 
-      text: "Strategic Patterns", 
-      key: "strategic",
-      subtitle: "JTDs, Tech Stack, Business Model",
-      count: 0
-    },
-    { 
-      icon: <Zap size={14} />, 
-      text: "Competitive Analysis", 
-      key: "competitive",
-      subtitle: "Market positioning, Differentiation",
-      count: 0
-    },
-    { 
-      icon: <Rocket size={14} />, 
-      text: "GTM Roadmap", 
-      key: "roadmap",
-      subtitle: "Go-to-market strategy, Milestones",
-      count: 0
-    },
-    { 
-      icon: <BarChart3 size={14} />, 
-      text: "KOR Framework", 
-      key: "kor",
-      subtitle: "Key objectives & results",
-      count: 0
-    },
-    { 
-      icon: <Users size={14} />, 
-      text: "Partner Strategy", 
-      key: "partners",
-      subtitle: "Strategic partnerships",
-      count: 0
-    }
+    icon: <BarChart3 size={14} />, 
+    text: "Business Model Operations", 
+    key: "kor",
+    subtitle: "Pricing evolution & unit economics",
+    count: 0
+  },
+  { 
+    icon: <Users size={14} />, 
+    text: "Partnership Activation", 
+    key: "partners",
+    subtitle: "Strategic alliances & channel development",
+    count: 0
+  }
   ];
 // Navigation function for steps
   const navigateToStep = (targetStep) => {
