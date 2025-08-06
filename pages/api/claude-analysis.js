@@ -451,9 +451,34 @@ if (!parsedAnalysis) {
 
   } catch (error) {
     console.error('Claude Analysis Error:', error);
-    res.status(500).json({ 
-      error: 'Failed to generate analysis',
-      details: error.message 
+    
+    // User-friendly error messages
+    let userMessage = 'Errore durante la generazione dell\'analisi strategica.';
+    let statusCode = 500;
+    
+    if (error.message && error.message.includes('413')) {
+      userMessage = 'Il testo da analizzare è troppo lungo. Riduci la descrizione a massimo 500 caratteri e riprova.';
+      statusCode = 413;
+    } else if (error.message && error.message.includes('timeout')) {
+      userMessage = 'L\'intelligenza artificiale sta elaborando... L\'analisi potrebbe richiedere fino a 30 secondi. Riprova.';
+      statusCode = 504;
+    } else if (error.message && error.message.includes('401')) {
+      userMessage = 'Errore di configurazione AI. Il sistema è temporaneamente non disponibile.';
+      statusCode = 401;
+    } else if (error.message && error.message.includes('429')) {
+      userMessage = 'Sistema temporaneamente sovraccarico. Attendi 1 minuto prima di riprovare.';
+      statusCode = 429;
+    } else if (error.message && error.message.includes('Claude')) {
+      userMessage = 'Il servizio di analisi AI è momentaneamente non disponibile. Riprova tra qualche minuto.';
+      statusCode = 503;
+    } else if (error.message && error.message.includes('parsing')) {
+      userMessage = 'Errore nell\'elaborazione della risposta. Prova a riformulare la tua richiesta.';
+      statusCode = 422;
+    }
+    
+    res.status(statusCode).json({ 
+      error: userMessage,
+      technicalDetails: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
 }

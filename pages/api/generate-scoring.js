@@ -121,9 +121,34 @@ IMPORTANTE:
 
   } catch (error) {
     console.error('Scoring Generation Error:', error);
-    res.status(500).json({ 
-      error: 'Failed to generate scoring',
-      details: error.message 
+    
+    // User-friendly error messages
+    let userMessage = 'Errore nella generazione del punteggio di innovazione.';
+    let statusCode = 500;
+    
+    if (error.message && error.message.includes('413')) {
+      userMessage = 'Troppe informazioni da elaborare. Il sistema sta generando un\'analisi semplificata.';
+      statusCode = 413;
+    } else if (error.message && error.message.includes('timeout')) {
+      userMessage = 'La valutazione sta richiedendo più tempo del previsto. Attendi ancora qualche secondo.';
+      statusCode = 504;
+    } else if (error.message && error.message.includes('validation')) {
+      userMessage = 'Per generare il punteggio devi prima rispondere a tutte le domande di validazione.';
+      statusCode = 400;
+    } else if (error.message && error.message.includes('429')) {
+      userMessage = 'Hai richiesto troppe valutazioni. Attendi 30 secondi prima di generare un nuovo scoring.';
+      statusCode = 429;
+    } else if (error.message && error.message.includes('Claude')) {
+      userMessage = 'Il motore di scoring è temporaneamente offline. Riprova tra 2 minuti.';
+      statusCode = 503;
+    } else if (error.message && error.message.includes('parsing')) {
+      userMessage = 'Errore nel calcolo del punteggio. Verifica di aver completato tutti i passaggi precedenti.';
+      statusCode = 422;
+    }
+    
+    res.status(statusCode).json({ 
+      error: userMessage,
+      technicalDetails: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
 }

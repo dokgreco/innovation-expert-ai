@@ -199,11 +199,32 @@ if (content.length > 10 || relevanceScore > 5 || Object.keys(allProperties).leng
     });
 
   } catch (error) {
-    console.error('❌ Notion API Error:', error);
-    res.status(500).json({ 
-      error: 'Failed to query Notion databases',
-      details: error.message,
-      query: req.body.query // 🔍 DEBUG: Log query in errore
+    console.error('Notion API Error:', error);
+    
+    // User-friendly error messages
+    let userMessage = 'Si è verificato un errore durante l\'analisi dei database.';
+    let statusCode = 500;
+    
+    if (error.message && error.message.includes('413')) {
+      userMessage = 'L\'analisi richiesta è troppo complessa. Prova con una descrizione più breve (max 500 caratteri).';
+      statusCode = 413;
+    } else if (error.message && error.message.includes('timeout')) {
+      userMessage = 'L\'analisi sta richiedendo più tempo del previsto. Riprova tra qualche secondo.';
+      statusCode = 504;
+    } else if (error.message && error.message.includes('401')) {
+      userMessage = 'Errore di autenticazione con i database. Contatta il supporto tecnico.';
+      statusCode = 401;
+    } else if (error.message && error.message.includes('429')) {
+      userMessage = 'Troppe richieste in poco tempo. Attendi 30 secondi prima di riprovare.';
+      statusCode = 429;
+    } else if (error.message && error.message.includes('network')) {
+      userMessage = 'Problema di connessione ai database. Verifica la tua connessione internet.';
+      statusCode = 503;
+    }
+    
+    res.status(statusCode).json({ 
+      error: userMessage,
+      technicalDetails: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
 }
