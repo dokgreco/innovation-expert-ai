@@ -84,40 +84,40 @@ const [sectionLoading, setSectionLoading] = useState({});
 const deepDiveSections = [
   { 
     icon: <Target size={14} />, 
-    text: "Jobs-to-be-Done Execution", 
-    key: "strategic",
-    subtitle: "From identification to market validation",
-    count: 0
+    text: "Jobs-to-be-Done & Market Trends", 
+    key: "jtbd-trends",
+    subtitle: "Core jobs & market evolution",
+    count: sectionConversations['jtbd-trends']?.length || 0
   },
   { 
     icon: <Zap size={14} />, 
-    text: "Competitive Positioning", 
+    text: "Competitive Positioning Canvas", 
     key: "competitive",
-    subtitle: "Differentiation & moat building",
-    count: 0
+    subtitle: "Market positioning & differentiation",
+    count: sectionConversations.competitive?.length || 0
   },
   { 
     icon: <Rocket size={14} />, 
-    text: "Market Strategy Tactics", 
-    key: "roadmap",
-    subtitle: "GTM execution & pilot management",
-    count: 0
+    text: "Technology Adoption & Validation", 
+    key: "tech-validation",
+    subtitle: "Tech stack & validation approach",
+    count: sectionConversations['tech-validation']?.length || 0
   },
-    { 
+  { 
     icon: <BarChart3 size={14} />, 
-    text: "Business Model Operations", 
-    key: "kor",
-    subtitle: "Pricing evolution & unit economics",
-    count: 0
+    text: "Process & Metrics", 
+    key: "process-metrics",
+    subtitle: "Operations & KPIs",
+    count: sectionConversations['process-metrics']?.length || 0
   },
   { 
     icon: <Users size={14} />, 
     text: "Partnership Activation", 
-    key: "partners",
-    subtitle: "Strategic alliances & channel development",
-    count: 0
+    key: "partnership",
+    subtitle: "Strategic alliances & channels",
+    count: sectionConversations.partnership?.length || 0
   }
-  ];
+];
 // Navigation function for steps
   const navigateToStep = (targetStep) => {
     if (targetStep <= Math.max(...stepHistory) + 1) {

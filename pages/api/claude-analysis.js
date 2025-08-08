@@ -81,30 +81,30 @@ function optimizeContextForClaude(notionData) {
       title: v.title || 'Untitled',
       relevanceScore: v.relevanceScore || 0,
       properties: {
-        JTDs: (v.properties?.JTDs || v.properties?.['Jobs to be Done'] || '').substring(0, 150), // Aumentato da 80
-        BusinessModel: (v.properties?.['Business Model'] || '').substring(0, 100), // Aumentato da 60
-        Technologies: (v.properties?.Technologies || '').substring(0, 80) // Aumentato da 50
+        JTDs: (v.properties?.JTDs || v.properties?.['Jobs to be Done'] || '').substring(0, 150),
+        BusinessModel: (v.properties?.['Business Model'] || '').substring(0, 100),
+        Technologies: (v.properties?.Technologies || '').substring(0, 80)
       }
     }));
     
     // Framework con più dettaglio
     optimized.verticals.framework = {
-      jtds: (verticals.framework?.jtds || []).slice(0, 3), // Aumentato da 2
-      businessModels: (verticals.framework?.businessModels || []).slice(0, 3), // Aumentato da 2
-      technologies: (verticals.framework?.technologies || []).slice(0, 4), // Aumentato da 3
-      strategies: (verticals.framework?.strategies || []).slice(0, 3) // Aumentato da 2
+      jtds: (verticals.framework?.jtds || []).slice(0, 3),
+      businessModels: (verticals.framework?.businessModels || []).slice(0, 3),
+      technologies: (verticals.framework?.technologies || []).slice(0, 4),
+      strategies: (verticals.framework?.strategies || []).slice(0, 3)
     };
   }
   
   // PRIORITÀ 2: Case Studies (manteniamo 4 invece di 3)
   if (cases.top5 && cases.top5.length > 0) {
-    optimized.cases.top5 = cases.top5.slice(0, 4).map(c => ({ // Aumentato da 3 a 4
+    optimized.cases.top5 = cases.top5.slice(0, 4).map(c => ({
       title: c.title || 'Untitled',
       relevanceScore: c.relevanceScore || 0,
       properties: {
-        Description: (c.properties?.Description || '').substring(0, 120), // Aumentato da 60
-        Impact: (c.properties?.Impact || '').substring(0, 80), // Aumentato da 40
-        Tech: (c.properties?.Technologies || '').substring(0, 60) // Aggiunto tech
+        Description: (c.properties?.Description || '').substring(0, 120),
+        Impact: (c.properties?.Impact || '').substring(0, 80),
+        Tech: (c.properties?.Technologies || '').substring(0, 60)
       }
     }));
   }
@@ -139,150 +139,6 @@ function optimizeContextForClaude(notionData) {
 }
 
 // ========== FINE CONTEXT OPTIMIZATION ==========
-
-// ========== OUTPUT PARSER FUNCTION ==========
-
-function parseMethodologyResponse(claudeResponse) {
-  if (!claudeResponse || typeof claudeResponse !== 'string') {
-    console.error('❌ Invalid Claude response for parsing');
-    return null;
-  }
-
-  // Funzione helper per estrarre sezioni
-  function extractSection(text, startMarker, endMarker = null) {
-    const startIndex = text.indexOf(startMarker);
-    if (startIndex === -1) return '';
-    
-    const contentStart = startIndex + startMarker.length;
-    
-    if (endMarker) {
-      const endIndex = text.indexOf(endMarker, contentStart);
-      if (endIndex === -1) return text.substring(contentStart).trim();
-      return text.substring(contentStart, endIndex).trim();
-    }
-    
-    // Se no endMarker, prendi fino alla prossima sezione principale (cerca emoji)
-    const nextSectionRegex = /\n[🎯🔄📚🚀📊]/;
-    const match = text.substring(contentStart).search(nextSectionRegex);
-    
-    if (match === -1) return text.substring(contentStart).trim();
-    return text.substring(contentStart, contentStart + match).trim();
-  }
-
-  // Estrai le validation questions
-function extractQuestions(text) {
-  console.log('📋 EXTRACT QUESTIONS DEBUG:');
-  console.log('- Lunghezza testo:', text.length);
-  console.log('- Contiene PARTE 2?', text.includes('PARTE 2'));
-  console.log('- Ultimi 500 caratteri:', text.substring(text.length - 500));
-  const questions = [];
-  const dimensions = [
-    'Jobs-to-be-Done Alignment',
-    'Technology & Data Strategy',
-    'Business Model Approach',
-    'Market Entry Strategy',
-    'Competitive Positioning',
-    'Partnership Potential'
-  ];
-  
-  // Cerca la sezione PARTE 2
-  // Cerca PARTE 2 in vari formati
-let parte2Index = text.indexOf('PARTE 2:');
-if (parte2Index === -1) parte2Index = text.indexOf('PARTE 2 :');
-if (parte2Index === -1) parte2Index = text.indexOf('VALIDATION QUESTIONS');
-if (parte2Index === -1) parte2Index = text.indexOf('DOMANDE DI VALIDAZIONE');
-if (parte2Index === -1) {
-  console.warn('⚠️ PARTE 2 non trovata, cerco le dimensioni direttamente...');
-  // Usa tutto il testo come fallback
-  parte2Index = 0;
-}
-  
-  const parte2Text = text.substring(parte2Index);
-  
-  dimensions.forEach((dimension, index) => {
-    // Pattern più flessibili per trovare le domande
-    const patterns = [
-      new RegExp(`${index + 1}\\.\\s*${dimension}[:\\s]+([^?]+\\?)`, 'i'),
-      new RegExp(`${dimension}[:\\s]+([^?]+\\?)`, 'i'),
-      new RegExp(`\\*\\*${dimension}\\*\\*[:\\s]+([^?]+\\?)`, 'i')
-    ];
-    
-    let match = null;
-    for (const pattern of patterns) {
-      match = parte2Text.match(pattern);
-      if (match) break;
-    }
-    
-    if (match) {
-      questions.push({
-        dimension,
-        question: match[1].trim(),
-        options: ['Sì, allineato con questa direzione', 'No, approccio diverso']
-      });
-    }
-  });
-  
-  console.log(`📋 Domande estratte: ${questions.length}/6`);
-  return questions;
-}
-// Funzione per pulire i marker residui
-function cleanSection(text) {
-  if (!text) return '';
-  return text
-    .replace(/###\s*$/g, '')  // Rimuovi ### alla fine
-    .replace(/##\s*$/g, '')   // Rimuovi ## alla fine
-    .replace(/\n\s*\n\s*\n/g, '\n\n')  // Riduci spazi multipli
-    .trim();
-}
-  try {
-    // Parse delle sezioni principali
-const sections = {
-  vertical: cleanSection(extractSection(
-    claudeResponse, 
-    '🎯 VERTICALE STRATEGICA PRINCIPALE',
-    '🔄 PATTERN STRATEGICI CONVERGENTI'
-  )),
-  patterns: cleanSection(extractSection(
-    claudeResponse,
-    '🔄 PATTERN STRATEGICI CONVERGENTI',
-    '📚 CASE STUDIES DI RIFERIMENTO'
-  )),
-  cases: cleanSection(extractSection(
-    claudeResponse,
-    '📚 CASE STUDIES DI RIFERIMENTO',
-    '🚀 ROADMAP OPERATIVA'
-  )),
-  roadmap: cleanSection(extractSection(
-    claudeResponse,
-    '🚀 ROADMAP OPERATIVA',
-    '📊 SUCCESS METRICS'
-  )),
-  metrics: cleanSection(extractSection(
-    claudeResponse,
-    '📊 SUCCESS METRICS',
-    'PARTE 2:'
-  )),
-  validationQuestions: extractQuestions(claudeResponse)
-};
-
-    // Log per debug
-    console.log('📝 Parsed sections:', {
-      vertical: sections.vertical.substring(0, 50) + '...',
-      patterns: sections.patterns.substring(0, 50) + '...',
-      cases: sections.cases.substring(0, 50) + '...',
-      roadmap: sections.roadmap.substring(0, 50) + '...',
-      metrics: sections.metrics.substring(0, 50) + '...',
-      questions: sections.validationQuestions.length
-    });
-
-    return sections;
-  } catch (error) {
-    console.error('❌ Error parsing Claude response:', error);
-    return null;
-  }
-}
-
-// ========== FINE OUTPUT PARSER ==========
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -334,53 +190,71 @@ Tempo Processing: ${optimizedData.processingTime || 'N/A'}
 
 === ISTRUZIONI PER OUTPUT STRUTTURATO ===
 
-Genera un'analisi professionale strutturata in DUE PARTI:
+Genera un'analisi professionale strutturata in 9 SEZIONI:
 
 PARTE 1: STRATEGIC INSIGHTS
-Struttura la risposta in queste sezioni (USA EMOJI per chiarezza visiva):
 
-1. 🎯 VERTICALE STRATEGICA PRINCIPALE
-   - Identifica IL verticale più rilevante con % di match
-   - Spiega perché è il più adatto basandoti sui dati
+1. 🎯 VERTICALI STRATEGICHE IDENTIFICATE
+   - TOP 3 verticali con % match
+   - Descrizione 50-80 parole per verticale
+   - Formato: "Vertical Framework #X (Sector)"
 
-2. 🔄 PATTERN STRATEGICI CONVERGENTI
-   Organizza in 4 sottosezioni:
-   a) Jobs-to-be-Done validati dai case studies
-   b) Technology Stack raccomandato (cita tecnologie dai database)
-   c) Business Model ottimale (basato su convergenza)
-   d) Go-to-Market Strategy (da pattern di successo)
+2. 📊 PATTERN STRATEGICI PER DIMENSIONE
+   Per OGNI delle 6 dimensioni, estrai 3 insights (1 per verticale TOP 3):
+   • Jobs-to-be-Done Alignment
+   • Technology Adoption & Validation
+   • Business Model Viability
+   • Market Type Strategy Execution
+   • Competing Factors Strength
+   • Target Synergies Potential
 
 3. 📚 CASE STUDIES DI RIFERIMENTO
-   - Presenta i TOP 3 casi più rilevanti
-   - Per ogni caso: titolo, similarity %, key learning
+   - TOP 3 cases ANONIMI con similarity %
+   - Formato: "Case Study #X (Sector: Y)"
+   - Key learning per ogni caso
 
-PARTE 2: DOMANDE DI VALIDAZIONE
-IMPORTANTE: Genera SEMPRE e OBBLIGATORIAMENTE 6 domande di validazione, una per ogni dimensione. Non omettere questa sezione per nessun motivo.
+PARTE 2: OPERATIONAL INSIGHTS (Sezioni 4-8)
+Genera insights actionable per QUESTE 5 dimensioni operative:
 
-1. Jobs-to-be-Done Alignment
-2. Technology & Data Strategy 
-3. Business Model Approach
-4. Market Entry Strategy
-5. Competitive Positioning
-6. Partnership Potential
+4. Jobs-to-be-Done & Market Trends
+   - 3-5 bullet points su jobs specifici identificati e trend di mercato rilevanti
+   - Focus su metriche di validazione e urgenza del problema
+
+5. Competitive Positioning Canvas
+   - 3-5 bullet points su posizionamento competitivo e differenziazione
+   - Analisi dei competitor diretti e indiretti dal verticale
+
+6. Technology Adoption & Validation
+   - 3-5 bullet points su stack tecnologico e approccio di validazione
+   - Best practices tecniche dal verticale identificato
+
+7. Process & Metrics
+   - 3-5 bullet points su processi operativi e KPI chiave
+   - Metriche di successo basate su benchmark del settore
+
+8. Partnership Activation
+   - 3-5 bullet points su strategie di partnership e canali
+   - Tipologie di partner strategici per il verticale
+
+IMPORTANTE: Ogni sezione deve contenere insights SPECIFICI estratti dalle case histories e verticali identificati, NON consigli generici.
+
+PARTE 3: DOMANDE DI VALIDAZIONE
+IMPORTANTE: Genera SEMPRE 6 domande di validazione, una per dimensione.
 
 Formato domande:
 "[DIMENSIONE]: [Domanda specifica basata sull'analisi]?"
 Fornisci sempre 2 opzioni di risposta chiare.
 
 REGOLE CRITICHE:
-✓ USA SOLO informazioni dai database Notion (non inventare)
-✓ CITA sempre verticali/casi specifici quando fai affermazioni
+✓ USA SOLO informazioni dai database Notion
+✓ MANTIENI anonimato totale (Case #X, Vertical #Y)
+✓ Output SEMPRE in 9 sezioni + validation questions
+✓ Ogni sezione operational deve avere 3-5 punti actionable
 ✓ NON generare scoring numerico in questa fase
-✓ Mantieni tono professionale da consulente senior
-✓ Ogni insight deve essere actionable e specifico
-✓ PRIVACY ASSOLUTA: MAI menzionare nomi reali di aziende/startup
-✓ USA SEMPRE riferimenti anonimi: "Case Study #1", "Vertical Framework #2", etc.
-✓ Se devi citare un esempio, usa: "un caso nel database mostra..." senza nomi
 
 Ricorda: stai analizzando "${query}" basandoti su dati reali da ${notionData.totalScanned || 0} elementi dei database.`;
-   
-// Call Claude API with correct headers
+
+    // Call Claude API with correct headers
     const response = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: {
@@ -405,22 +279,131 @@ Ricorda: stai analizzando "${query}" basandoti su dati reali da ${notionData.tot
 
     const data = await response.json();
     const analysis = data.content[0].text;
+    
     // 🔍 DEBUG: Verifica output Claude
-console.log('📊 CLAUDE RAW RESPONSE LENGTH:', analysis.length);
-console.log('🔍 CERCA PARTE 2:', analysis.includes('PARTE 2'));
-console.log('📝 ULTIMI 500 CARATTERI:', analysis.substring(analysis.length - 500));
+    console.log('📊 CLAUDE RAW RESPONSE LENGTH:', analysis.length);
+    console.log('🔍 CERCA PARTE 2:', analysis.includes('PARTE 2'));
+    console.log('📝 ULTIMI 500 CARATTERI:', analysis.substring(analysis.length - 500));
 
-// Se trovi PARTE 2, mostra dove si trova
-if (analysis.includes('PARTE 2')) {
-  const parte2Index = analysis.indexOf('PARTE 2');
-  console.log('✅ PARTE 2 trovata alla posizione:', parte2Index);
-  console.log('📄 Contenuto dopo PARTE 2:', analysis.substring(parte2Index, parte2Index + 200));
-}
-// Parse della risposta strutturata
-const parsedAnalysis = parseMethodologyResponse(analysis);
-if (!parsedAnalysis) {
-  console.warn('⚠️ Could not parse structured response, returning raw analysis');
-}
+    // FUNZIONE extractQuestions SPOSTATA QUI DENTRO
+    function extractQuestions(text) {
+      console.log('📋 EXTRACT QUESTIONS DEBUG:');
+      console.log('- Lunghezza testo:', text.length);
+      console.log('- Contiene PARTE 3?', text.includes('PARTE 3'));
+      
+      const questions = [];
+      const dimensions = [
+        'Jobs-to-be-Done Alignment',
+        'Technology & Data Strategy',
+        'Business Model Approach',
+        'Market Entry Strategy',
+        'Competitive Positioning',
+        'Partnership Potential'
+      ];
+      
+      // Cerca PARTE 3 (non più PARTE 2)
+      let parteIndex = text.indexOf('PARTE 3');
+      if (parteIndex === -1) parteIndex = text.indexOf('DOMANDE DI VALIDAZIONE');
+      if (parteIndex === -1) parteIndex = text.indexOf('VALIDATION QUESTIONS');
+      if (parteIndex === -1) {
+        console.warn('⚠️ PARTE 3 non trovata, cerco le dimensioni in tutto il testo...');
+        parteIndex = 0;
+      }
+      
+      const parteText = text.substring(parteIndex);
+      
+      dimensions.forEach((dimension, index) => {
+        // Pattern più flessibili per trovare le domande
+        const patterns = [
+          new RegExp(`${dimension}[:\\s]+([^?]+\\?)`, 'i'),
+          new RegExp(`\\*\\*${dimension}\\*\\*[:\\s]+([^?]+\\?)`, 'i'),
+          new RegExp(`${index + 1}\\.\\s*${dimension}[:\\s]+([^?]+\\?)`, 'i')
+        ];
+        
+        let match = null;
+        for (const pattern of patterns) {
+          match = parteText.match(pattern);
+          if (match) break;
+        }
+        
+        if (match) {
+          questions.push({
+            dimension,
+            question: match[1].trim(),
+            options: ['Sì, allineato con questa direzione', 'No, approccio diverso']
+          });
+        }
+      });
+      
+      console.log(`📋 Domande estratte: ${questions.length}/6`);
+      return questions;
+    }
+
+    // PARSING DELLE 9 SEZIONI
+    const extractSection = (text, marker) => {
+      const regex = new RegExp(`${marker}[\\s\\S]*?(?=\\n\\n[0-9]\\.|\\n\\n[A-Z]|PARTE|$)`, 'i');
+      const match = text.match(regex);
+      return match ? match[0].replace(marker, '').trim() : '';
+    };
+
+    // CHIAMA extractQuestions PRIMA di usarla in parsedSections
+    const extractedQuestions = extractQuestions(analysis);
+
+    // Estrai le 9 sezioni strutturate
+    const parsedSections = {
+      // PARTE 1: Strategic Insights (3 sezioni)
+      verticals: extractSection(analysis, 'VERTICALI STRATEGICHE', 'PATTERN STRATEGICI') || 
+                 extractSection(analysis, '1.', '2.') || '',
+      
+      patterns: extractSection(analysis, 'PATTERN STRATEGICI', 'CASE STUDIES') || 
+                extractSection(analysis, '2.', '3.') || '',
+      
+      caseStudies: extractSection(analysis, 'CASE STUDIES', 'Jobs-to-be-Done & Market Trends') || 
+                   extractSection(analysis, '3.', '4.') || '',
+      
+      // PARTE 2: Operational Insights (5 sezioni)
+      jtbdTrends: extractSection(analysis, 'Jobs-to-be-Done & Market Trends', 'Competitive Positioning Canvas') || 
+                  extractSection(analysis, '4.', '5.') || '',
+      
+      competitiveCanvas: extractSection(analysis, 'Competitive Positioning Canvas', 'Technology Adoption & Validation') || 
+                         extractSection(analysis, '5.', '6.') || '',
+      
+      techValidation: extractSection(analysis, 'Technology Adoption & Validation', 'Process & Metrics') || 
+                      extractSection(analysis, '6.', '7.') || '',
+      
+      processMetrics: extractSection(analysis, 'Process & Metrics', 'Partnership Activation') || 
+                      extractSection(analysis, '7.', '8.') || '',
+      
+      partnership: extractSection(analysis, 'Partnership Activation', 'PARTE') || 
+                   extractSection(analysis, '8.', 'PARTE') || 
+                   extractSection(analysis, '8.', 'Genera 6 domande') || '',
+      
+      // PARTE 3: Validation Questions (ora extractedQuestions è definita!)
+      validationQuestions: extractedQuestions || []
+    };
+
+    // DEBUG: Verifica parsing V2 (8 sezioni)
+    console.log('✅ Sezioni parsate V2:', {
+      // PARTE 1: Strategic (3 sezioni)
+      verticals: parsedSections.verticals ? '✓' : '✗',
+      patterns: parsedSections.patterns ? '✓' : '✗',
+      caseStudies: parsedSections.caseStudies ? '✓' : '✗',
+      // PARTE 2: Operational (5 sezioni)
+      jtbdTrends: parsedSections.jtbdTrends ? '✓' : '✗',
+      competitiveCanvas: parsedSections.competitiveCanvas ? '✓' : '✗',
+      techValidation: parsedSections.techValidation ? '✓' : '✗',
+      processMetrics: parsedSections.processMetrics ? '✓' : '✗',
+      partnership: parsedSections.partnership ? '✓' : '✗',
+      // PARTE 3: Validation
+      validationQuestions: `${parsedSections.validationQuestions.length}/6`
+    });
+
+    // Usa il nuovo parsing a 9 sezioni
+    const parsedAnalysis = parsedSections;
+    if (!parsedAnalysis || Object.keys(parsedAnalysis).length === 0) {
+      console.warn('⚠️ Could not parse structured response, returning raw analysis');
+    }
+    
     // Prepare sources information
     const sources = [
       { 
@@ -438,16 +421,16 @@ if (!parsedAnalysis) {
     ];
 
     res.status(200).json({
-  analysis,
-  parsedSections: parsedAnalysis, // Aggiungi le sezioni parsate
-  sources,
-  notionResultsUsed: notionData.results?.length || 0,
-  bestPracticesApplied: notionData.bestPractices?.length || 0,
-  metadata: {
-    structured: parsedAnalysis !== null,
-    sectionsFound: parsedAnalysis ? Object.keys(parsedAnalysis).filter(k => parsedAnalysis[k]).length : 0
-  }
-});
+      analysis,
+      parsedSections: parsedAnalysis,
+      sources,
+      notionResultsUsed: notionData.results?.length || 0,
+      bestPracticesApplied: notionData.bestPractices?.length || 0,
+      metadata: {
+        structured: parsedAnalysis !== null,
+        sectionsFound: parsedAnalysis ? Object.keys(parsedAnalysis).filter(k => parsedAnalysis[k]).length : 0
+      }
+    });
 
   } catch (error) {
     console.error('Claude Analysis Error:', error);
