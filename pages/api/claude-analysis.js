@@ -349,38 +349,37 @@ Ricorda: stai analizzando "${query}" basandoti su dati reali da ${notionData.tot
     // CHIAMA extractQuestions PRIMA di usarla in parsedSections
     const extractedQuestions = extractQuestions(analysis);
 
-    // Estrai le 9 sezioni strutturate
-    const parsedSections = {
-      // PARTE 1: Strategic Insights (3 sezioni)
-      verticals: extractSection(analysis, 'VERTICALI STRATEGICHE', 'PATTERN STRATEGICI') || 
-                 extractSection(analysis, '1.', '2.') || '',
-      
-      patterns: extractSection(analysis, 'PATTERN STRATEGICI', 'CASE STUDIES') || 
-                extractSection(analysis, '2.', '3.') || '',
-      
-      caseStudies: extractSection(analysis, 'CASE STUDIES', 'Jobs-to-be-Done & Market Trends') || 
-                   extractSection(analysis, '3.', '4.') || '',
-      
-      // PARTE 2: Operational Insights (5 sezioni)
-      jtbdTrends: extractSection(analysis, 'Jobs-to-be-Done & Market Trends', 'Competitive Positioning Canvas') || 
-                  extractSection(analysis, '4.', '5.') || '',
-      
-      competitiveCanvas: extractSection(analysis, 'Competitive Positioning Canvas', 'Technology Adoption & Validation') || 
-                         extractSection(analysis, '5.', '6.') || '',
-      
-      techValidation: extractSection(analysis, 'Technology Adoption & Validation', 'Process & Metrics') || 
-                      extractSection(analysis, '6.', '7.') || '',
-      
-      processMetrics: extractSection(analysis, 'Process & Metrics', 'Partnership Activation') || 
-                      extractSection(analysis, '7.', '8.') || '',
-      
-      partnership: extractSection(analysis, 'Partnership Activation', 'PARTE') || 
-                   extractSection(analysis, '8.', 'PARTE') || 
-                   extractSection(analysis, '8.', 'Genera 6 domande') || '',
-      
-      // PARTE 3: Validation Questions (ora extractedQuestions è definita!)
-      validationQuestions: extractedQuestions || []
-    };
+    // Estrai le 8 sezioni strutturate V2
+const parsedSections = {
+  // PARTE 1: Strategic Insights (3 sezioni)
+  verticals: extractSection(analysis, 'VERTICALI STRATEGICHE IDENTIFICATE') || 
+             extractSection(analysis, '1. 🎯 VERTICALI STRATEGICHE') || '',
+  
+  patterns: extractSection(analysis, 'PATTERN STRATEGICI PER DIMENSIONE') || 
+            extractSection(analysis, '2. 📊 PATTERN STRATEGICI') || '',
+  
+  cases: extractSection(analysis, 'CASE STUDIES DI RIFERIMENTO') || 
+         extractSection(analysis, '3. 📚 CASE STUDIES') || '',
+  
+  // PARTE 2: Operational Insights (5 sezioni) - NOMI ESATTI COME NELL'OUTPUT
+  jtbdTrends: extractSection(analysis, '4. Jobs-to-be-Done & Market Trends') || 
+              extractSection(analysis, 'Jobs-to-be-Done & Market Trends') || '',
+  
+  competitiveCanvas: extractSection(analysis, '5. Competitive Positioning Canvas') || 
+                     extractSection(analysis, 'Competitive Positioning Canvas') || '',
+  
+  techValidation: extractSection(analysis, '6. Technology Adoption & Validation') || 
+                  extractSection(analysis, 'Technology Adoption & Validation') || '',
+  
+  processMetrics: extractSection(analysis, '7. Process & Metrics') || 
+                  extractSection(analysis, 'Process & Metrics') || '',
+  
+  partnership: extractSection(analysis, '8. Partnership Activation') || 
+               extractSection(analysis, 'Partnership Activation') || '',
+  
+  // PARTE 3: Validation Questions
+  validationQuestions: extractedQuestions || []
+};
 
     // DEBUG: Verifica parsing V2 (8 sezioni)
     console.log('✅ Sezioni parsate V2:', {

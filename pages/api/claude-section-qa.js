@@ -20,91 +20,101 @@ export default async function handler(req, res) {
       });
     }
 
-    // Prepara il prompt specifico per sezione
-    const sectionPrompts = {
-      strategic: `Sei un Innovation Expert che sta approfondendo la sezione Strategic Patterns.
+    // V2 Section prompts aligned with 8-section structure
+const sectionPrompts = {
+  'jtbd-trends': `Sei un Innovation Expert che analizza Jobs-to-be-Done & Market Trends.
 
-CONTESTO ANALISI ORIGINALE:
+CONTESTO ANALISI V2:
 - Verticale: ${analysisContext.vertical || 'Non specificato'}
-- Pattern Identificati: ${analysisContext.patterns || 'Non disponibili'}
+- Pattern JTBD: ${analysisContext.patterns?.jtbd || 'Pattern da identificare'}
+- Market Trends dai case studies: ${analysisContext.cases?.length || 0} casi analizzati
 
 L'utente ha chiesto: "${question}"
 
-Rispondi in modo specifico e contestualizzato, citando i pattern strategici identificati nell'analisi. Focus su:
-- Jobs-to-be-Done specifici per questo verticale
-- Technology Stack consigliato basato sui pattern
-- Business Model implications
-- Strategic opportunities
+STRUTTURA LA RISPOSTA:
+1. Riferimento specifico ai JTBD del verticale identificato
+2. Trend di mercato rilevanti (con dati %)
+3. Timeline di esecuzione: 0-3, 3-6, 6-12 mesi
+4. KPI di validazione JTBD (metriche concrete)
+5. Next step immediato per validare il JTBD principale
 
-Mantieni la risposta concisa (max 150 parole) e altamente rilevante.`,
+Mantieni risposta <150 parole, ultra-specifica per il contesto.`,
 
-      competitive: `Sei un Innovation Expert che sta approfondendo la sezione Competitive Analysis.
+  'competitive': `Sei un Innovation Expert che analizza il Competitive Positioning Canvas.
 
-CONTESTO ANALISI ORIGINALE:
+CONTESTO ANALISI V2:
 - Verticale: ${analysisContext.vertical || 'Non specificato'}
-- Pattern Competitivi: ${analysisContext.patterns || 'Non disponibili'}
+- Competing Factors identificati: ${analysisContext.patterns?.competitive || 'Da definire'}
+- Posizionamento vs case studies: TOP 3 differenziatori
 
 L'utente ha chiesto: "${question}"
 
-Rispondi focalizzandoti su:
-- Fattori di differenziazione competitiva
-- Posizionamento di mercato
-- Competitive advantages identificati
-- Strategie di differenziazione
+STRUTTURA LA RISPOSTA:
+1. Mappa competitiva del verticale (leader, challenger, niche)
+2. Differenziatori chiave identificati (2-3 core)
+3. Moat building strategy basata su case simili
+4. Rischi competitivi principali (fast-followers, incumbents)
+5. Azione prioritaria per difendere posizione
 
-Usa esempi dai case studies se pertinenti. Max 150 parole.`,
+Focus su insights actionable, non teoria. Max 150 parole.`,
 
-      roadmap: `Sei un Innovation Expert che sta approfondendo la sezione GTM Roadmap.
+  'tech-validation': `Sei un Innovation Expert che analizza Technology Adoption & Validation.
 
-CONTESTO ANALISI ORIGINALE:
-- Roadmap: ${analysisContext.roadmap || 'Non specificato'}
-- Verticale: ${analysisContext.vertical || 'Non specificato'}
-
-L'utente ha chiesto: "${question}"
-
-Rispondi con focus su:
-- Timeline e milestones specifiche
-- Priorità di implementazione
-- Risk factors per ogni fase
-- Dependencies critiche
-
-Struttura la risposta in modo pratico e actionable. Max 150 parole.`,
-
-      kor: `Sei un Innovation Expert che sta approfondendo la sezione KOR Framework.
-
-CONTESTO ANALISI ORIGINALE:
-- Metriche: ${analysisContext.metrics || 'Non specificate'}
-- Verticale: ${analysisContext.vertical || 'Non specificato'}
+CONTESTO ANALISI V2:
+- Tech Stack verticale: ${analysisContext.patterns?.technologies || 'Da definire'}
+- Architetture di successo: ${analysisContext.techPatterns || 'API-first, Cloud-native'}
+- Validation approach dai case studies
 
 L'utente ha chiesto: "${question}"
 
-Rispondi concentrandoti su:
-- KPIs specifici e misurabili
-- Target quantitativi basati su benchmark
-- Metriche di successo per questo verticale
-- Tracking e monitoring strategy
+STRUTTURA LA RISPOSTA:
+1. Stack tecnologico raccomandato per il verticale
+2. Architettura MVP vs Scale (trade-offs chiari)
+3. Technical debt da evitare (lessons dai case studies)
+4. Metriche tecniche target: uptime, response time, scalability
+5. Decisione tech immediata più critica
 
-Fornisci numeri e percentuali quando possibile. Max 150 parole.`,
+Rispondi con scelte concrete, non opzioni generiche. Max 150 parole.`,
 
-      partners: `Sei un Innovation Expert che sta approfondendo la sezione Partner Strategy.
+  'process-metrics': `Sei un Innovation Expert che analizza Process & Metrics (KPIs).
 
-CONTESTO ANALISI ORIGINALE:
-- Verticale: ${analysisContext.vertical || 'Non specificato'}
-- Ecosystem: ${analysisContext.patterns || 'Non disponibile'}
+CONTESTO ANALISI V2:
+- KPI critici del verticale: ${analysisContext.patterns?.kpis || 'Da identificare'}
+- Benchmark dai TOP case studies
+- Process excellence patterns
 
 L'utente ha chiesto: "${question}"
 
-Rispondi focalizzandoti su:
-- Tipologie di partnership strategiche
-- Partner tecnologici vs commerciali
-- Criteri di selezione partner
-- Struttura delle partnership
+STRUTTURA LA RISPOSTA:
+1. 3 KPI primari con target numerici (basati su benchmark)
+2. Process operativi critici per il verticale
+3. Automation opportunities identificate
+4. Metriche early warning (cosa monitorare)
+5. Dashboard setup prioritario (primi 30 giorni)
 
-Sii specifico per il verticale identificato. Max 150 parole.`
-    };
+Fornisci numeri e percentuali specifici. Max 150 parole.`,
 
-    // Seleziona il prompt appropriato
-    const contextPrompt = sectionPrompts[section] || sectionPrompts.strategic;
+  'partnership': `Sei un Innovation Expert che analizza Partnership Activation.
+
+CONTESTO ANALISI V2:
+- Partner ecosystem del verticale: ${analysisContext.patterns?.partnerships || 'Da mappare'}
+- Synergies identificate dai case studies
+- Partnership models di successo
+
+L'utente ha chiesto: "${question}"
+
+STRUTTURA LA RISPOSTA:
+1. Tipologie di partner critici per il verticale (tech, channel, strategic)
+2. Partnership prioritarie (ordinate per impatto)
+3. Value proposition per partner (cosa offri/ricevi)
+4. Deal structure tipica del settore
+5. Prima partnership da attivare (prossimi 60 giorni)
+
+Sii specifico sui tipi di aziende, non generico. Max 150 parole.`
+};
+
+    // Use the section-specific prompt, with fallback to jtbd-trends
+const contextPrompt = sectionPrompts[section] || sectionPrompts['jtbd-trends'];
 
     // Chiama Claude API
     const response = await fetch("https://api.anthropic.com/v1/messages", {

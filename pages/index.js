@@ -80,34 +80,34 @@ const [sectionLoading, setSectionLoading] = useState({});
     }
   ];
 
-  // Deep Dive sections per future implementazioni interattive
+  // Deep Dive Sections aligned with V2 structure (5 operational sections)
 const deepDiveSections = [
   { 
     icon: <Target size={14} />, 
     text: "Jobs-to-be-Done & Market Trends", 
     key: "jtbd-trends",
-    subtitle: "Core jobs & market evolution",
+    subtitle: "Execution patterns from case histories",
     count: sectionConversations['jtbd-trends']?.length || 0
   },
   { 
     icon: <Zap size={14} />, 
     text: "Competitive Positioning Canvas", 
     key: "competitive",
-    subtitle: "Market positioning & differentiation",
+    subtitle: "Differentiation strategies & moats",
     count: sectionConversations.competitive?.length || 0
   },
   { 
     icon: <Rocket size={14} />, 
     text: "Technology Adoption & Validation", 
     key: "tech-validation",
-    subtitle: "Tech stack & validation approach",
+    subtitle: "Tech stack & architecture patterns",
     count: sectionConversations['tech-validation']?.length || 0
   },
   { 
     icon: <BarChart3 size={14} />, 
     text: "Process & Metrics", 
     key: "process-metrics",
-    subtitle: "Operations & KPIs",
+    subtitle: "KPIs & operational excellence",
     count: sectionConversations['process-metrics']?.length || 0
   },
   { 
@@ -144,92 +144,85 @@ const deepDiveSections = [
     setSidebarOpen(false);
   };
 
+// Compatibility mapping for old keys to new V2 structure
+const sectionKeyMapping = {
+  "strategic": "jtbd-trends",
+  "competitive": "competitive", 
+  "roadmap": "tech-validation",
+  "kor": "process-metrics",
+  "partners": "partnership"
+};
+
 const handleSectionQuestion = async (section, question) => {
   if (!question.trim()) return;
   
-  setSectionLoading({ ...sectionLoading, [section]: true });
+  // Map old keys to new V2 keys if necessary
+  const mappedSection = sectionKeyMapping[section] || section;
+  
+  // NUOVO: Trova l'ultimo messaggio con analisi completa
+  const lastAnalysisMessage = messages.filter(m => m.parsedSections).pop();
+  const contextData = lastAnalysisMessage?.parsedSections || {};
+  
+  setSectionLoading({ ...sectionLoading, [mappedSection]: true });
   
   const newConversation = [
-    ...(sectionConversations[section] || []),
+    ...(sectionConversations[mappedSection] || []),
     { role: 'user', content: question, timestamp: new Date() }
   ];
   
   setSectionConversations({
     ...sectionConversations,
-    [section]: newConversation
+    [mappedSection]: newConversation
   });
   
-  setSectionInputs({ ...sectionInputs, [section]: '' });
-  
+  setSectionInputs({ ...sectionInputs, [mappedSection]: '' });
+
   try {
-    // Trova il messaggio con l'analisi completa
-    const analysisMessage = messages.find(m => m.parsedSections);
-    
-    if (!analysisMessage || !analysisMessage.parsedSections) {
-      throw new Error('Contesto analisi non trovato');
-    }
-    
-    // Prepara il contesto per l'API
-    const analysisContext = {
-      vertical: analysisMessage.parsedSections.vertical || '',
-      patterns: analysisMessage.parsedSections.patterns || '',
-      cases: analysisMessage.parsedSections.cases || '',
-      roadmap: analysisMessage.parsedSections.roadmap || '',
-      metrics: analysisMessage.parsedSections.metrics || ''
-    };
-    
-    console.log('🚀 Chiamata API Deep Dive:', { section, question });
-    
-    // Chiama la nuova API
     const response = await fetch('/api/claude-section-qa', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        section,
-        question,
-        analysisContext
+        section: mappedSection,
+        question: question,
+        analysisContext: {
+          // NUOVO: Usa i dati reali dall'analisi
+          vertical: contextData.verticals || 'IoT Platform Solutions',
+          patterns: contextData.patterns || '',
+          cases: contextData.cases || '',
+          
+          // Passa le sezioni specifiche
+          jtbdTrends: contextData.jtbdTrends || '',
+          competitiveCanvas: contextData.competitiveCanvas || '',
+          techValidation: contextData.techValidation || '',
+          processMetrics: contextData.processMetrics || '',
+          partnership: contextData.partnership || '',
+          
+          // Query originale dell'utente
+          originalQuery: messages.find(m => m.role === 'user')?.content || ''
+        }
       })
     });
+
+    const data = await response.json();
     
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.error || 'Errore nella generazione della risposta');
-    }
-    
-    const result = await response.json();
-    
-    // Aggiungi la risposta alla conversazione
     setSectionConversations(prev => ({
       ...prev,
-      [section]: [
+      [mappedSection]: [
         ...newConversation,
-        { 
-          role: 'assistant', 
-          content: result.answer, 
-          timestamp: new Date(),
-          confidence: result.confidence 
-        }
+        { role: 'assistant', content: data.answer || 'Response generated', timestamp: new Date() }
       ]
     }));
-    
   } catch (error) {
-    console.error('Errore Deep Dive Q&A:', error);
-    
-    // In caso di errore, mostra un messaggio user-friendly
+    console.error('Section Q&A Error:', error);
     setSectionConversations(prev => ({
       ...prev,
-      [section]: [
+      [mappedSection]: [
         ...newConversation,
-        { 
-          role: 'assistant', 
-          content: `Mi dispiace, c'è stato un errore nel processare la tua domanda. Errore: ${error.message}. Riprova tra qualche istante.`, 
-          timestamp: new Date(),
-          isError: true
-        }
+        { role: 'assistant', content: 'Error generating response. Please try again.', timestamp: new Date() }
       ]
     }));
   } finally {
-    setSectionLoading({ ...sectionLoading, [section]: false });
+    setSectionLoading({ ...sectionLoading, [mappedSection]: false });
   }
 };
 
@@ -544,11 +537,11 @@ console.log('🎯 RESULT DAL BACKEND:', {
   {/* Sezione contenuto principale */}
   <div className="bg-white border border-gray-200 rounded-lg p-6">
     <h2 className="text-2xl font-bold text-gray-900 mb-4">
-      {deepDiveMode === 'strategic' && '🎯 Strategic Patterns'}
-      {deepDiveMode === 'competitive' && '⚔️ Competitive Analysis'}
-      {deepDiveMode === 'roadmap' && '🚀 GTM Roadmap'}
-      {deepDiveMode === 'kor' && '📊 KOR Framework'}
-      {deepDiveMode === 'partners' && '🤝 Partner Strategy'}
+      {deepDiveMode === 'jtbd-trends' && '🎯 Jobs-to-be-Done & Market Trends'}
+{deepDiveMode === 'competitive' && '⚔️ Competitive Positioning Canvas'}
+{deepDiveMode === 'tech-validation' && '🚀 Technology Adoption & Validation'}
+{deepDiveMode === 'process-metrics' && '📊 Process & Metrics'}
+{deepDiveMode === 'partnership' && '🤝 Partnership Activation'}
     </h2>
     
     {/* Contenuto specifico per sezione */}
@@ -561,117 +554,79 @@ console.log('🎯 RESULT DAL BACKEND:', {
         const sections = analysisMessage.parsedSections;
         
         switch(deepDiveMode) {
-          case 'strategic':
-            return (
-              <>
-                {sections.vertical && (
-                  <div className="mb-6">
-                    <h3 className="text-lg font-semibold text-gray-800 mb-3">Verticale Strategica</h3>
-                    <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-4">
-                      <p className="text-indigo-900">{sections.vertical}</p>
-                    </div>
-                  </div>
-                )}
-                
-                {sections.patterns && (
-                  <div className="space-y-4">
-                    <h3 className="text-lg font-semibold text-gray-800">Pattern Strategici Identificati</h3>
-                    {sections.patterns.split('\n').filter(p => p.trim()).map((pattern, idx) => (
-                      <div key={idx} className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                        <p className="text-gray-700">{pattern}</p>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </>
-            );
-            
-          case 'competitive':
-            return (
-              <>
-                <h3 className="text-lg font-semibold text-gray-800 mb-3">Analisi Competitiva</h3>
-                {sections.patterns && (
-                  <div className="space-y-4">
-                    {sections.patterns.split('\n').filter(p => p.includes('ompet') || p.includes('ifferenz')).map((item, idx) => (
-                      <div key={idx} className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                        <p className="text-gray-700">{item}</p>
-                      </div>
-                    ))}
-                  </div>
-                )}
-                <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                  <p className="text-sm text-blue-800">
-                    💡 Analizza i fattori di differenziazione e il posizionamento competitivo basato sui case studies del settore.
-                  </p>
-                </div>
-              </>
-            );
-            
-          case 'roadmap':
-            return (
-              <>
-                {sections.roadmap && (
-                  <div className="space-y-4">
-                    <h3 className="text-lg font-semibold text-gray-800">Roadmap Operativa</h3>
-                    {sections.roadmap.split('\n').filter(r => r.trim()).map((phase, idx) => (
-                      <div key={idx} className="bg-green-50 border border-green-200 rounded-lg p-4">
-                        <div className="flex items-start">
-                          <span className="bg-green-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold mr-3 flex-shrink-0">
-                            {idx + 1}
-                          </span>
-                          <p className="text-gray-700">{phase}</p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </>
-            );
-            
-          case 'kor':
-            return (
-              <>
-                {sections.metrics && (
-                  <div className="space-y-4">
-                    <h3 className="text-lg font-semibold text-gray-800">Key Objectives & Results</h3>
-                    {sections.metrics.split('\n').filter(m => m.trim()).map((metric, idx) => (
-                      <div key={idx} className="bg-purple-50 border border-purple-200 rounded-lg p-4">
-                        <p className="text-gray-700">{metric}</p>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </>
-            );
-            
-          case 'partners':
-            return (
-              <>
-                <h3 className="text-lg font-semibold text-gray-800 mb-3">Strategia Partnership</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                    <h4 className="font-semibold text-blue-900 mb-2">Partner Tecnologici</h4>
-                    <p className="text-sm text-gray-700">Integrazioni tecniche e co-sviluppo prodotto</p>
-                  </div>
-                  <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                    <h4 className="font-semibold text-green-900 mb-2">Partner Commerciali</h4>
-                    <p className="text-sm text-gray-700">Distribuzione e go-to-market congiunto</p>
-                  </div>
-                  <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
-                    <h4 className="font-semibold text-purple-900 mb-2">Partner Strategici</h4>
-                    <p className="text-sm text-gray-700">Investitori e advisor di settore</p>
-                  </div>
-                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                    <h4 className="font-semibold text-yellow-900 mb-2">Partner Istituzionali</h4>
-                    <p className="text-sm text-gray-700">Enti pubblici e associazioni di categoria</p>
-                  </div>
-                </div>
-              </>
-            );
-            
-          default:
-            return <p>Sezione non trovata</p>;
-        }
+  case 'jtbd-trends':
+    return (
+      <>
+        {sections.jtbdTrends && (
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold text-gray-800">Jobs-to-be-Done & Market Trends</h3>
+            <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-4">
+              <div className="whitespace-pre-wrap text-gray-700">{sections.jtbdTrends}</div>
+            </div>
+          </div>
+        )}
+      </>
+    );
+    
+  case 'competitive':
+    return (
+      <>
+        {sections.competitiveCanvas && (
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold text-gray-800">Competitive Positioning Canvas</h3>
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+              <div className="whitespace-pre-wrap text-gray-700">{sections.competitiveCanvas}</div>
+            </div>
+          </div>
+        )}
+      </>
+    );
+    
+  case 'tech-validation':
+    return (
+      <>
+        {sections.techValidation && (
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold text-gray-800">Technology Adoption & Validation</h3>
+            <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+              <div className="whitespace-pre-wrap text-gray-700">{sections.techValidation}</div>
+            </div>
+          </div>
+        )}
+      </>
+    );
+    
+  case 'process-metrics':
+    return (
+      <>
+        {sections.processMetrics && (
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold text-gray-800">Process & Metrics</h3>
+            <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+              <div className="whitespace-pre-wrap text-gray-700">{sections.processMetrics}</div>
+            </div>
+          </div>
+        )}
+      </>
+    );
+    
+  case 'partnership':
+    return (
+      <>
+        {sections.partnership && (
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold text-gray-800">Partnership Activation</h3>
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <div className="whitespace-pre-wrap text-gray-700">{sections.partnership}</div>
+            </div>
+          </div>
+        )}
+      </>
+    );
+    
+  default:
+    return <p className="text-gray-500">Sezione non disponibile. Fai prima un'analisi completa.</p>;
+}
       })()}
     </div>
   </div>
@@ -723,12 +678,12 @@ console.log('🎯 RESULT DAL BACKEND:', {
           }
         }}
         placeholder={`Chiedi approfondimenti su ${
-          deepDiveMode === 'strategic' ? 'pattern strategici' :
-          deepDiveMode === 'competitive' ? 'analisi competitiva' :
-          deepDiveMode === 'roadmap' ? 'roadmap e milestone' :
-          deepDiveMode === 'kor' ? 'metriche e KPI' :
-          'strategia partnership'
-        }...`}
+  deepDiveMode === 'jtbd-trends' ? 'Jobs-to-be-Done e trend di mercato' :
+  deepDiveMode === 'competitive' ? 'posizionamento competitivo' :
+  deepDiveMode === 'tech-validation' ? 'tecnologie e validazione' :
+  deepDiveMode === 'process-metrics' ? 'metriche e processi' :
+  'strategie di partnership'
+}...`}
         className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm"
         disabled={sectionLoading[deepDiveMode]}
       />
@@ -771,12 +726,54 @@ console.log('🎯 RESULT DAL BACKEND:', {
                 {message.parsedSections && (
                   <div className="mt-6 border-t border-gray-200 pt-6">
                     <AnalysisDisplay data={message} />
+
+{/* AGGIUNGI QUI IL NUOVO BLOCCO - INIZIO */}
+{/* Display Operational Sections V2 */}
+{message.parsedSections && (
+  <div className="mt-6 space-y-4">
+    {message.parsedSections.jtbdTrends && (
+      <div className="bg-white border border-gray-200 rounded-lg p-4">
+        <h3 className="font-semibold text-gray-900 mb-2">4. Jobs-to-be-Done & Market Trends</h3>
+        <div className="text-sm text-gray-700 whitespace-pre-wrap">{message.parsedSections.jtbdTrends}</div>
+      </div>
+    )}
+    
+    {message.parsedSections.competitiveCanvas && (
+      <div className="bg-white border border-gray-200 rounded-lg p-4">
+        <h3 className="font-semibold text-gray-900 mb-2">5. Competitive Positioning Canvas</h3>
+        <div className="text-sm text-gray-700 whitespace-pre-wrap">{message.parsedSections.competitiveCanvas}</div>
+      </div>
+    )}
+    
+    {message.parsedSections.techValidation && (
+      <div className="bg-white border border-gray-200 rounded-lg p-4">
+        <h3 className="font-semibold text-gray-900 mb-2">6. Technology Adoption & Validation</h3>
+        <div className="text-sm text-gray-700 whitespace-pre-wrap">{message.parsedSections.techValidation}</div>
+      </div>
+    )}
+    
+    {message.parsedSections.processMetrics && (
+      <div className="bg-white border border-gray-200 rounded-lg p-4">
+        <h3 className="font-semibold text-gray-900 mb-2">7. Process & Metrics</h3>
+        <div className="text-sm text-gray-700 whitespace-pre-wrap">{message.parsedSections.processMetrics}</div>
+      </div>
+    )}
+    
+    {message.parsedSections.partnership && (
+      <div className="bg-white border border-gray-200 rounded-lg p-4">
+        <h3 className="font-semibold text-gray-900 mb-2">8. Partnership Activation</h3>
+        <div className="text-sm text-gray-700 whitespace-pre-wrap">{message.parsedSections.partnership}</div>
+      </div>
+    )}
+  </div>
+)}
+{/* AGGIUNGI QUI IL NUOVO BLOCCO - FINE */}
                     
-                    {/* Mostra validation questions se presenti */}
-                    {message.parsedSections && 
+{/* Mostra validation questions se presenti */}
+{message.parsedSections && 
  currentStep === 2 && (
-                      <div className="mt-6">
-                        <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-4 mb-4">
+  <div className="mt-6">
+    <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-4 mb-4">
                           <p className="text-sm text-indigo-800">
                             ✅ Analisi completata! Procedi con la validazione per generare lo scoring calibrato.
                           </p>
