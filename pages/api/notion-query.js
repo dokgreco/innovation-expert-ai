@@ -193,9 +193,17 @@ allResults = allResults.map(result => {
     dbMaxScore
   );
   
+  // AGGIUNGI QUESTO LOG
+  if (result.rawScore > 100) {
+    console.log(`🔍 SCORING DEBUG - ${result.title}:`);
+    console.log(`   Raw: ${result.rawScore}, Max: ${dbMaxScore}, Final: ${finalScore}`);
+    console.log(`   Content length: ${result.content?.length || 0}`);
+    console.log(`   Properties: ${Object.keys(result.properties || {}).length}`);
+  }
+  
   return {
     ...result,
-    relevanceScore: finalScore, // Score normalizzato 0-100
+    relevanceScore: finalScore,
     finalScore: finalScore
   };
 });
@@ -450,17 +458,30 @@ function calculateFinalScore(rawScore, content, properties, dbMaxScore) {
   // Normalizzazione 0-100
   const normalized = dbMaxScore > 0 ? (rawScore / dbMaxScore) * 100 : rawScore;
   
-  // Penalità per content vuoto (molto importante!)
-  const contentPenalty = (content?.length || 0) < 50 ? 0.5 : 1;
+  // Penalità content vuoto
+  const contentPenalty = (content?.length || 0) < 50 ? 0.85 : 1;
   
-  // Penalità per troppe properties (frena DB2 che ne ha 37)
+  // DICHIARAZIONE propCount PRIMA dell'uso!
   const propCount = Object.keys(properties || {}).length;
-  const propertyPenalty = propCount > 20 ? 0.8 : 1;
   
-  // Score finale con penalità applicate
-  const finalScore = normalized * contentPenalty * propertyPenalty;
+  // Property penalty
+  let propertyPenalty = 1;
+  if (propCount > 40) {
+    propertyPenalty = 0.9;
+  } else if (propCount < 5) {
+    propertyPenalty = 0.8;
+  }
   
-  return Math.round(finalScore * 10) / 10; // Arrotonda a 1 decimale
+  // Boost per high raw scores
+  let relevanceBoost = 1;
+  if (rawScore > 500) {
+    relevanceBoost = 1.1;
+  }
+  
+  // Score finale con boost
+  const finalScore = normalized * contentPenalty * propertyPenalty * relevanceBoost;
+  
+  return Math.min(Math.round(finalScore * 10) / 10, 100);
 }
 
 // 🔧 NUOVA FUNZIONE: Semantic matching per verticali (DB1)
