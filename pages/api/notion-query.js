@@ -30,7 +30,18 @@ export default async function handler(req, res) {
     let allResults = [];
     let totalResults = 0;
 
+    // 🔧 TASK 2.1: Tracking statistiche per database
+const dbStats = {
+  [databases[0]]: { maxScore: 0, count: 0, results: [] },
+  [databases[1]]: { maxScore: 0, count: 0, results: [] },
+  [databases[2]]: { maxScore: 0, count: 0, results: [] }
+};
     // Query each database
+    // 🔧 TASK 1.3: Estrai keywords per i filtri
+const keywords = extractKeyTokens(query);
+console.log('🔍 Keywords estratte per filtri:', keywords);
+
+// Query each database
     for (const dbId of databases) {
       if (!dbId) continue;
       
@@ -39,14 +50,22 @@ export default async function handler(req, res) {
     if (dbId === databases[1]) {
       console.log('🔍 DEBUG DB2 - Database ID:', dbId);
     }
-        // 🔧 FIX 1: Aggiungere filtro di ricerca basato sulla query
-        const searchFilter = {}; // Rimuoviamo temporaneamente il filtro
 
-        // 🔧 FIX 2: Usare il filtro nella query
-        const dbResponse = await notion.databases.query({
-          database_id: dbId,
-          page_size: 20, // Ridotto per performance
-          filter: Object.keys(searchFilter).length > 0 ? searchFilter : undefined,
+        // 🔧 FIX 1: Aggiungere filtro di ricerca basato sulla query
+const searchFilter = buildNotionFilter(dbId, query, keywords);
+
+// Log per debug
+if (searchFilter) {
+  console.log(`📋 DB${databases.indexOf(dbId) + 1}: Query CON filtri applicati`);
+} else {
+  console.log(`📋 DB${databases.indexOf(dbId) + 1}: Query SENZA filtri (fallback)`);
+}
+
+// 🔧 FIX 2: Usare il filtro nella query
+const dbResponse = await notion.databases.query({
+  database_id: dbId,
+  page_size: 20, // Ridotto per performance
+  filter: searchFilter, // 🆕 SEMPLIFICATO - passa direttamente searchFilter
           sorts: [
             {
               timestamp: 'last_edited_time',
@@ -106,14 +125,26 @@ if (dbId === databases[1]) {
 
 // MODIFICATO: Accetta anche se ha properties ricche, non solo content
 if (content.length > 10 || relevanceScore > 5 || Object.keys(allProperties).length > 10) {
-  allResults.push({
-    id: page.id,
-    title: getPageTitle(page),
-    content: content,
-    properties: allProperties,
-    database: dbId,
-    relevanceScore: relevanceScore
-  });
+  // 🔧 Prima salva il raw score per trovare il max
+const rawScore = relevanceScore;
+
+// Aggiorna il max score per questo database
+if (rawScore > dbStats[dbId].maxScore) {
+  dbStats[dbId].maxScore = rawScore;
+}
+
+// Salva temporaneamente con raw score
+allResults.push({
+  id: page.id,
+  title: getPageTitle(page),
+  content: content,
+  properties: allProperties,
+  database: dbId,
+  relevanceScore: rawScore, // Temporaneo
+  rawScore: rawScore // Salva anche il raw per dopo
+});
+
+dbStats[dbId].count++;
 
   // 🔍 DEBUG: Log properties estratte
   if (allResults.length === 1) { // Solo per il primo risultato
@@ -146,6 +177,47 @@ if (content.length > 10 || relevanceScore > 5 || Object.keys(allProperties).leng
       title: r.title.substring(0, 50) + '...' // Troncato per leggibilità
     })));
 
+    // 🔧 TASK 2.4: Normalizza tutti gli score dopo aver trovato i max
+console.log('📊 DB Stats prima della normalizzazione:');
+Object.entries(dbStats).forEach(([db, stats], idx) => {
+  console.log(`DB${idx + 1}: Max score = ${stats.maxScore}, Count = ${stats.count}`);
+});
+
+// Applica normalizzazione a tutti i risultati
+allResults = allResults.map(result => {
+  const dbMaxScore = dbStats[result.database].maxScore || 100;
+  const finalScore = calculateFinalScore(
+    result.rawScore,
+    result.content,
+    result.properties,
+    dbMaxScore
+  );
+  
+  return {
+    ...result,
+    relevanceScore: finalScore, // Score normalizzato 0-100
+    finalScore: finalScore
+  };
+});
+
+// Riordina per score normalizzato
+allResults.sort((a, b) => b.finalScore - a.finalScore);
+// 🔧 TASK 3.2: Applica diversity filters
+allResults = applyDiversityFilters(allResults);
+
+console.log('📊 POST-DIVERSITY Distribution:');
+const dbCounts = {};
+allResults.forEach(r => {
+  const dbIndex = databases.indexOf(r.database) + 1;
+  dbCounts[`DB${dbIndex}`] = (dbCounts[`DB${dbIndex}`] || 0) + 1;
+});
+console.log(dbCounts);
+
+console.log('✅ Score normalizzati:');
+allResults.slice(0, 5).forEach(r => {
+  console.log(`- ${r.title}: Raw=${r.rawScore.toFixed(0)} → Final=${r.finalScore}`);
+});
+
     // 🔧 FIX 6: Generare insights più specifici basati sulla query
     const insights = generateQuerySpecificInsights(allResults, query);
     const bestPractices = extractRelevantBestPractices(allResults, query);
@@ -172,6 +244,50 @@ if (content.length > 10 || relevanceScore > 5 || Object.keys(allProperties).leng
     // STEP 3: Pattern convergence analysis
     const convergencePatterns = analyzeConvergencePatterns(caseResults);
     
+    // Aggiungi questo PRIMA del return alla fine della funzione
+console.log('=== NOTION QUERY DEBUG ===');
+console.log('Query Input:', query);
+console.log('Total Results Found:', allResults.length);
+
+// Mostra TUTTI i risultati con scores
+allResults.forEach((result, idx) => {
+  console.log(`\n[${idx}] Title: ${result.title}`);
+  console.log(`   Content preview: ${result.content?.substring(0, 100)}`);
+  console.log(`   Properties popolate: ${Object.keys(result.properties).length}`);
+  // Se hai già un similarity score, mostralo
+});
+
+console.log('\n=== TOP 5 SELECTED ===');
+allResults.slice(0, 5).forEach(r => {
+  console.log(`- ${r.title}`);
+});
+
+// === NUOVO TEST SCORING BREAKDOWN ===
+console.log('\n🔍 === SCORING BREAKDOWN TEST ===');
+allResults.forEach((r, idx) => {
+  // Conta i priority fields
+  const priorityFields = [
+    'JTDs', 'Business Model', 'Technology Adoption', 
+    'KOR', 'Market Type Strategy', 'Competing Factors',
+    'Description', 'Impact', 'Technologies', 'Value Proposition'
+  ];
+  
+  let priorityCount = 0;
+  Object.keys(r.properties || {}).forEach(key => {
+    if (priorityFields.some(pf => key.includes(pf))) {
+      priorityCount++;
+    }
+  });
+  
+  console.log(`\n[${idx}] ${r.title}:`);
+  console.log(`  📊 Properties totali: ${Object.keys(r.properties || {}).length}`);
+  console.log(`  📝 Content length: ${r.content?.length || 0} chars`);
+  console.log(`  ⭐ Priority fields: ${priorityCount}`);
+  console.log(`  🎯 Database: ${r.database?.substring(0, 8)}...`);
+  console.log(`  💯 Score: ${r.relevanceScore || r.score || 'NO SCORE'}`);
+});
+console.log('=== END SCORING BREAKDOWN ===\n');
+
     // Structured response secondo metodologia proprietaria
     res.status(200).json({
       methodology: {
@@ -304,7 +420,7 @@ function calculateRelevance(content, query, properties = {}) {
     // Aumenta significativamente lo score per match senza content
     queryWords.forEach(word => {
       if (combinedText.includes(word)) {
-        score += 10; // Peso MOLTO maggiore per compensare mancanza content
+        score += 2; // 🔧 TASK 2.3: Ridotto da 10 a 2 per bilanciare scoring
       }
     });
     
@@ -327,6 +443,24 @@ function calculateRelevance(content, query, properties = {}) {
   }
   
   return finalScore;
+}
+
+// 🔧 TASK 2.2: Calcola score finale normalizzato
+function calculateFinalScore(rawScore, content, properties, dbMaxScore) {
+  // Normalizzazione 0-100
+  const normalized = dbMaxScore > 0 ? (rawScore / dbMaxScore) * 100 : rawScore;
+  
+  // Penalità per content vuoto (molto importante!)
+  const contentPenalty = (content?.length || 0) < 50 ? 0.5 : 1;
+  
+  // Penalità per troppe properties (frena DB2 che ne ha 37)
+  const propCount = Object.keys(properties || {}).length;
+  const propertyPenalty = propCount > 20 ? 0.8 : 1;
+  
+  // Score finale con penalità applicate
+  const finalScore = normalized * contentPenalty * propertyPenalty;
+  
+  return Math.round(finalScore * 10) / 10; // Arrotonda a 1 decimale
 }
 
 // 🔧 NUOVA FUNZIONE: Semantic matching per verticali (DB1)
@@ -515,6 +649,101 @@ function extractAllProperties(page) {
   console.log(`🎯 Priority fields trovati: ${foundPriorityFields.join(', ')}`);
   
   return properties;
+}
+
+// 🔧 TASK 3.1: Applica filtri di diversità
+function applyDiversityFilters(results) {
+  const limits = {
+    perDatabase: 5,    // Max 5 per database
+    perVertical: 2     // Max 2 per stesso verticale
+  };
+  
+  const counts = {
+    db: {},
+    vertical: {}
+  };
+  
+  const seen = new Set();
+  const filtered = [];
+  
+  for (const result of results) {
+    const dbKey = result.database;
+    const verticalKey = result.properties?.['Project Vertical'] || 
+                       result.properties?.['Vertical'] || 
+                       result.properties?.['Innovation Verticals'] ||
+                       'unknown';
+    const titleKey = (result.title || '').toLowerCase().replace(/\W+/g, '');
+    
+    // Skip duplicati
+    if (seen.has(titleKey)) {
+      console.log(`⏭️ Skip duplicato: ${result.title}`);
+      continue;
+    }
+    
+    // Check limite database
+    if ((counts.db[dbKey] || 0) >= limits.perDatabase) {
+      console.log(`⏭️ Skip per limite DB: ${result.title}`);
+      continue;
+    }
+    
+    // Check limite verticale
+    if ((counts.vertical[verticalKey] || 0) >= limits.perVertical) {
+      console.log(`⏭️ Skip per limite verticale: ${result.title}`);
+      continue;
+    }
+    
+    // Accetta risultato
+    filtered.push(result);
+    seen.add(titleKey);
+    counts.db[dbKey] = (counts.db[dbKey] || 0) + 1;
+    counts.vertical[verticalKey] = (counts.vertical[verticalKey] || 0) + 1;
+  }
+  
+  console.log(`🎯 Diversity filter: ${results.length} → ${filtered.length} risultati`);
+  return filtered;
+}
+
+// 🔧 TASK 1.1: Estrae parole chiave dalla query per filtri Notion
+function extractKeyTokens(query) {
+  if (!query) return [];
+  
+  return query.toLowerCase()
+    .split(/\s+/)
+    .filter(w => w.length > 3)
+    .slice(0, 3); // Massimo 3 keywords
+}
+// 🔧 TASK 1.2: Costruisce filtri specifici per ogni database (FIXED)
+function buildNotionFilter(dbId, query, keywords) {
+  // Se non ci sono keywords, non filtrare
+  if (!keywords || keywords.length === 0) {
+    return undefined;
+  }
+
+  const filterMap = {
+    [databases[0]]: { // DB1 - Verticals
+      or: [
+        { property: "Project Vertical", title: { contains: keywords[0] } },
+        // Rimuovo Keywords perché è multi_select
+        // { property: "Keywords", multi_select: { contains: keywords[0] } }
+      ]
+    },
+    [databases[1]]: { // DB2 - Case Histories (FUNZIONA!)
+      or: [
+        { property: "Description", rich_text: { contains: keywords[0] } },
+        { property: "Description (ENG)", rich_text: { contains: keywords[0] } },
+        { property: "Value Proposition", rich_text: { contains: keywords[0] } }
+      ]
+    },
+    [databases[2]]: { // DB3 - Mixed
+      or: [
+        { property: "Project Vertical", title: { contains: keywords[0] } },
+        // JTDs è rich_text, dovrebbe funzionare
+        { property: "JTDs", rich_text: { contains: keywords[0] } }
+      ]
+    }
+  };
+  
+  return filterMap[dbId];
 }
 function getPageTitle(page) {
   // 🔧 FIX: Migliore estrazione del titolo
