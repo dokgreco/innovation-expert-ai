@@ -239,7 +239,16 @@ Genera insights actionable per QUESTE 5 dimensioni operative:
 IMPORTANTE: Ogni sezione deve contenere insights SPECIFICI estratti dalle case histories e verticali identificati, NON consigli generici.
 
 PARTE 3: DOMANDE DI VALIDAZIONE
-IMPORTANTE: Genera SEMPRE 6 domande di validazione, una per dimensione.
+IMPORTANTE: Genera SEMPRE 5 domande di validazione, una per ogni sezione operational (4-8).
+Le 5 domande devono corrispondere ESATTAMENTE a:
+1. Jobs-to-be-Done & Market Trends
+2. Competitive Positioning Canvas  
+3. Technology Adoption & Validation
+4. Process & Metrics
+5. Partnership Activation
+
+Formato domande:
+"[NOME SEZIONE]: [Domanda specifica basata sull'analisi]?"
 
 Formato domande:
 "[DIMENSIONE]: [Domanda specifica basata sull'analisi]?"
@@ -287,83 +296,82 @@ Ricorda: stai analizzando "${query}" basandoti su dati reali da ${notionData.tot
 
     // FUNZIONE extractQuestions SPOSTATA QUI DENTRO
     function extractQuestions(text) {
-  console.log('📋 EXTRACT QUESTIONS DEBUG:');
-  console.log('- Lunghezza testo:', text.length);
-  
   const questions = [];
   
-  // Pattern per trovare le domande nel formato attuale
-  const patterns = [
-    /\*\*([^*]+)\*\*:\s*([^?]+\?)\s*\n\s*-\s*A\)\s*([^\n]+)\s*\n\s*-\s*B\)\s*([^\n]+)/g,
-    /\*\*([^*]+)\*\*:\s*([^\n]+\?)[^\n]*\n\s*-\s*A\)\s*([^\n]+)\s*\n\s*-\s*B\)\s*([^\n]+)/g
+  // Prima prova a trovare la sezione PARTE 3
+  const parte3Match = text.match(/PARTE 3[:\s]*DOMANDE DI VALIDAZIONE([\s\S]*?)$/i);
+  let searchText = parte3Match ? parte3Match[1] : text;
+  
+  // Pulisci il testo da contenuti extra
+  searchText = searchText.replace(/---+/g, '').trim();
+  
+  // Array di marker per le domande
+  const questionMarkers = [
+    'JOBS-TO-BE-DONE & MARKET TRENDS',
+    'COMPETITIVE POSITIONING CANVAS',
+    'TECHNOLOGY ADOPTION & VALIDATION',
+    'PROCESS & METRICS',
+    'PARTNERSHIP ACTIVATION'
   ];
   
-  // Prova con ogni pattern
-  for (const pattern of patterns) {
-    let match;
-    const textToSearch = text.slice(-5000); // Cerca negli ultimi 5000 caratteri
+  // Cerca ogni domanda con pattern più specifico
+  questionMarkers.forEach((marker, index) => {
+    // Pattern più rigido: cerca il marker seguito da : e poi la domanda fino a ? o al prossimo marker
+    const pattern = new RegExp(
+      `\\*\\*${marker}[\\s\\S]{0,20}?:\\*\\*\\s*([^*]+(?:\\?|$))`,
+      'i'
+    );
     
-    while ((match = pattern.exec(textToSearch)) !== null) {
-      const dimension = match[1].trim();
-      const question = match[2].trim();
-      const optionA = match[3].trim();
-      const optionB = match[4].trim();
-      
-      questions.push({
-        dimension: dimension,
-        question: question,
-        options: [
-          `A) ${optionA}`,
-          `B) ${optionB}`
-        ]
-      });
-      
-      console.log(`✅ Trovata domanda: ${dimension}`);
-    }
-  }
-  
-  // Se non trova con i pattern, cerca manualmente le 6 dimensioni note
-  if (questions.length === 0) {
-    console.log('⚠️ Pattern non trovati, cerco dimensioni note...');
+    const match = searchText.match(pattern);
     
-    const dimensions = [
-      'Jobs-to-be-Done',
-      'Technology Adoption',
-      'Business Model',
-      'Market Strategy',
-      'Competitive Factors',
-      'Partnership Synergies'
-    ];
-    
-    for (const dim of dimensions) {
-      const regex = new RegExp(`\\*\\*${dim}[^*]*\\*\\*:?\\s*([^\\n]+\\?)`, 'i');
-      const match = text.match(regex);
+    if (match && match[1]) {
+      // Pulisci la domanda
+      let questionText = match[1]
+        .replace(/\*\*/g, '')
+        .replace(/###/g, '')
+        .replace(/\n{2,}/g, ' ')
+        .trim();
       
-      if (match) {
-        // Cerca le opzioni A e B dopo la domanda
-        const startIndex = text.indexOf(match[0]);
-        const chunk = text.slice(startIndex, startIndex + 500);
-        
-        const optionAMatch = chunk.match(/A\)\s*([^\n]+)/);
-        const optionBMatch = chunk.match(/B\)\s*([^\n]+)/);
-        
-        if (optionAMatch && optionBMatch) {
-          questions.push({
-            dimension: dim,
-            question: match[1].trim(),
-            options: [
-              `A) ${optionAMatch[1].trim()}`,
-              `B) ${optionBMatch[1].trim()}`
-            ]
-          });
-          console.log(`✅ Trovata domanda manuale: ${dim}`);
+      // Assicurati che termini con ?
+      if (!questionText.endsWith('?')) {
+        const questionEndIndex = questionText.indexOf('?');
+        if (questionEndIndex > 0) {
+          questionText = questionText.substring(0, questionEndIndex + 1);
         }
       }
+      
+      // Limita la lunghezza a max 300 caratteri per sicurezza
+      if (questionText.length > 300) {
+        questionText = questionText.substring(0, 297) + '...?';
+      }
+      
+      questions.push({
+        dimension: marker.split(' ').map(w => 
+          w.charAt(0) + w.slice(1).toLowerCase()
+        ).join(' '),
+        question: questionText,
+        options: [] // Non più usato con textarea
+      });
     }
-  }
+  });
   
-  console.log(`📋 Domande estratte: ${questions.length}/6`);
-  return questions;
+  // Se non abbiamo trovato abbastanza domande, aggiungi delle default
+  const defaultQuestions = [
+    { dimension: "Jobs-to-be-Done & Market Trends", question: "Quali sono i 3 principali problemi specifici che stai risolvendo e quali trend di mercato stai cavalcando?" },
+    { dimension: "Competitive Positioning Canvas", question: "Quali sono i tuoi 2-3 differenziatori core rispetto ai competitor diretti e indiretti?" },
+    { dimension: "Technology Adoption & Validation", question: "Come stai strutturando la tua architettura tecnologica e quale validazione tecnica hai completato?" },
+    { dimension: "Process & Metrics", question: "Quali sono i tuoi KPI principali e come misuri l'efficienza dei processi operativi?" },
+    { dimension: "Partnership Activation", question: "Descrivi la tua strategia di partnership e quali alleanze strategiche stai sviluppando?" }
+  ];
+  
+  // Aggiungi domande mancanti dalle default
+  defaultQuestions.forEach((defaultQ, index) => {
+    if (!questions[index]) {
+      questions[index] = defaultQ;
+    }
+  });
+  
+  return questions.slice(0, 5); // Cambiato da 6 a 5
 }
 
     // PARSING DELLE 9 SEZIONI

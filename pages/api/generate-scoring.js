@@ -1,4 +1,65 @@
 export default async function handler(req, res) {
+  
+  // Helper functions per analisi testo
+  function analyzeTextAnswer(answer, dimension) {
+    // Keywords specifici per ogni dimensione
+    const keywordSets = {
+  "Jobs-to-be-Done & Market Trends": ["specific", "validate", "customer", "pain", "measure", "feedback", "interview", "problem", "solution", "urgency", "trend", "market", "demand", "growth"],
+  "Competitive Positioning Canvas": ["differentiation", "moat", "unique", "positioning", "advantage", "competitor", "benchmark", "superior", "defend", "barrier"],
+  "Technology Adoption & Validation": ["scalable", "API", "architecture", "stack", "tested", "MVP", "cloud", "security", "integration", "performance", "validation", "technical"],
+  "Process & Metrics": ["KPI", "metric", "measure", "process", "efficiency", "optimize", "workflow", "automation", "tracking", "dashboard", "target", "benchmark"],
+  "Partnership Activation": ["strategic", "channel", "distribution", "integration", "alliance", "ecosystem", "collaboration", "vendor", "reseller", "synergy", "partner", "B2B"]
+};
+    
+    const keywords = keywordSets[dimension] || [];
+    const answerLower = answer.toLowerCase();
+    const wordCount = answer.split(/\s+/).length;
+    
+    // Calcola score base
+    let score = 5; // Base score
+    
+    // Bonus per lunghezza (più dettagliato = meglio)
+    if (wordCount >= 50) score += 1.5;
+    else if (wordCount >= 30) score += 1;
+    else if (wordCount >= 20) score += 0.5;
+    
+    // Bonus per keywords trovate
+    let keywordsFound = 0;
+    keywords.forEach(keyword => {
+      if (answerLower.includes(keyword)) {
+        keywordsFound++;
+        score += 0.3;
+      }
+    });
+    
+    // Bonus per specificità (numeri, percentuali, timeline)
+    const hasNumbers = /\d+/.test(answer);
+    const hasPercentage = /%/.test(answer);
+    const hasTimeline = /(month|week|day|year|Q[1-4])/i.test(answer);
+    
+    if (hasNumbers) score += 0.5;
+    if (hasPercentage) score += 0.3;
+    if (hasTimeline) score += 0.4;
+    
+    // Cap a 10
+    return {
+      score: Math.min(Math.round(score * 10) / 10, 10),
+      keywordsFound,
+      wordCount,
+      hasSpecifics: hasNumbers || hasPercentage || hasTimeline
+    };
+  }
+
+  function generateTextBasedPrompt(analysisData, validationAnswers) {
+    // Analizza ogni risposta
+    const textAnalysis = {};
+    Object.entries(validationAnswers).forEach(([dimension, answer]) => {
+      textAnalysis[dimension] = analyzeTextAnswer(answer, dimension);
+    });
+    
+    return { textAnalysis };
+  }
+  
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
@@ -14,21 +75,33 @@ export default async function handler(req, res) {
       });
     }
 
+    // Analizza le risposte testuali
+    const { textAnalysis } = generateTextBasedPrompt(analysisData, validationAnswers);
+
     // Prepara il prompt calibrato per lo scoring
     const scoringPrompt = `
-Sei un Innovation Expert che deve generare uno scoring calibrato basato sull'analisi precedente e le risposte di validazione.
+Sei un Innovation Expert che deve generare uno scoring calibrato basato sull'analisi precedente e le risposte di validazione TESTUALI.
 
 === ANALISI PRECEDENTE ===
 ${JSON.stringify(analysisData.analysis || analysisData, null, 2).substring(0, 2000)}
 
-=== RISPOSTE VALIDAZIONE ===
+=== RISPOSTE TESTUALI VALIDAZIONE ===
 ${Object.entries(validationAnswers).map(([dimension, answer]) => 
-  `${dimension}: ${answer}`
+  `${dimension}: "${answer.substring(0, 200)}..."`
+).join('\n\n')}
+
+=== ANALISI AUTOMATICA RISPOSTE ===
+${Object.entries(textAnalysis).map(([dimension, analysis]) => 
+  `${dimension}: Keywords trovate: ${analysis.keywordsFound}, Parole: ${analysis.wordCount}, Specificità: ${analysis.hasSpecifics ? 'SI' : 'NO'}, Pre-score: ${analysis.score}/10`
 ).join('\n')}
 
 === GENERA SCORING CALIBRATO ===
 
-Basandoti ESCLUSIVAMENTE sui dati sopra e sui benchmark delle case histories analizzate, genera uno scoring strutturato:
+Basandoti su:
+1. Qualità e specificità delle risposte testuali
+2. Presenza di metriche concrete e timeline
+3. Allineamento con best practices del verticale
+4. Pre-score dall'analisi automatica (usa come base ma puoi aggiustare ±2 punti)
 
 FORMAT RICHIESTO:
 
@@ -40,32 +113,32 @@ FORMAT RICHIESTO:
 
 Jobs-to-be-Done Alignment:
 - Score: [X/10]
-- Rationale: [1-2 frasi basate su case histories simili]
+- Rationale: [1-2 frasi basate sulla qualità della risposta testuale]
 
 Technology & Data Strategy:
 - Score: [X/10]
-- Rationale: [1-2 frasi basate su convergenza tecnologica]
+- Rationale: [1-2 frasi basate sulla risposta]
 
 Business Model Approach:
 - Score: [X/10]
-- Rationale: [1-2 frasi basate su modelli validati]
+- Rationale: [1-2 frasi basate sulla risposta]
 
 Market Entry Strategy:
 - Score: [X/10]
-- Rationale: [1-2 frasi basate su strategie di successo]
+- Rationale: [1-2 frasi basate sulla risposta]
 
 Competitive Positioning:
 - Score: [X/10]
-- Rationale: [1-2 frasi basate su fattori differenzianti]
+- Rationale: [1-2 frasi basate sulla risposta]
 
 Partnership Potential:
 - Score: [X/10]
-- Rationale: [1-2 frasi basate su sinergie identificate]
+- Rationale: [1-2 frasi basate sulla risposta]
 
 3. RISK ASSESSMENT
 
 Rischio 1:
-- Fattore: [nome del rischio principale]
+- Fattore: [identifica dalla qualità delle risposte]
 - Livello: [Alto/Medio/Basso]
 - Descrizione: [1-2 frasi]
 - Mitigazione: [strategia suggerita]
@@ -77,9 +150,9 @@ Rischio 2:
 - Mitigazione: [strategia suggerita]
 
 IMPORTANTE:
-- Usa SOLO informazioni dall'analisi precedente
-- Calibra gli score basandoti sui benchmark citati
-- Se la risposta validation è negativa, riduci lo score di quella dimensione
+- Valuta la QUALITÀ e SPECIFICITÀ delle risposte testuali
+- Risposte vaghe o generiche = score più basso
+- Risposte con metriche e dettagli = score più alto
 - Overall score = media ponderata delle 6 dimensioni
 `;
 
