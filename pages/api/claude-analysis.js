@@ -287,57 +287,84 @@ Ricorda: stai analizzando "${query}" basandoti su dati reali da ${notionData.tot
 
     // FUNZIONE extractQuestions SPOSTATA QUI DENTRO
     function extractQuestions(text) {
-      console.log('📋 EXTRACT QUESTIONS DEBUG:');
-      console.log('- Lunghezza testo:', text.length);
-      console.log('- Contiene PARTE 3?', text.includes('PARTE 3'));
+  console.log('📋 EXTRACT QUESTIONS DEBUG:');
+  console.log('- Lunghezza testo:', text.length);
+  
+  const questions = [];
+  
+  // Pattern per trovare le domande nel formato attuale
+  const patterns = [
+    /\*\*([^*]+)\*\*:\s*([^?]+\?)\s*\n\s*-\s*A\)\s*([^\n]+)\s*\n\s*-\s*B\)\s*([^\n]+)/g,
+    /\*\*([^*]+)\*\*:\s*([^\n]+\?)[^\n]*\n\s*-\s*A\)\s*([^\n]+)\s*\n\s*-\s*B\)\s*([^\n]+)/g
+  ];
+  
+  // Prova con ogni pattern
+  for (const pattern of patterns) {
+    let match;
+    const textToSearch = text.slice(-5000); // Cerca negli ultimi 5000 caratteri
+    
+    while ((match = pattern.exec(textToSearch)) !== null) {
+      const dimension = match[1].trim();
+      const question = match[2].trim();
+      const optionA = match[3].trim();
+      const optionB = match[4].trim();
       
-      const questions = [];
-      const dimensions = [
-        'Jobs-to-be-Done Alignment',
-        'Technology & Data Strategy',
-        'Business Model Approach',
-        'Market Entry Strategy',
-        'Competitive Positioning',
-        'Partnership Potential'
-      ];
-      
-      // Cerca PARTE 3 (non più PARTE 2)
-      let parteIndex = text.indexOf('PARTE 3');
-      if (parteIndex === -1) parteIndex = text.indexOf('DOMANDE DI VALIDAZIONE');
-      if (parteIndex === -1) parteIndex = text.indexOf('VALIDATION QUESTIONS');
-      if (parteIndex === -1) {
-        console.warn('⚠️ PARTE 3 non trovata, cerco le dimensioni in tutto il testo...');
-        parteIndex = 0;
-      }
-      
-      const parteText = text.substring(parteIndex);
-      
-      dimensions.forEach((dimension, index) => {
-        // Pattern più flessibili per trovare le domande
-        const patterns = [
-          new RegExp(`${dimension}[:\\s]+([^?]+\\?)`, 'i'),
-          new RegExp(`\\*\\*${dimension}\\*\\*[:\\s]+([^?]+\\?)`, 'i'),
-          new RegExp(`${index + 1}\\.\\s*${dimension}[:\\s]+([^?]+\\?)`, 'i')
-        ];
-        
-        let match = null;
-        for (const pattern of patterns) {
-          match = parteText.match(pattern);
-          if (match) break;
-        }
-        
-        if (match) {
-          questions.push({
-            dimension,
-            question: match[1].trim(),
-            options: ['Sì, allineato con questa direzione', 'No, approccio diverso']
-          });
-        }
+      questions.push({
+        dimension: dimension,
+        question: question,
+        options: [
+          `A) ${optionA}`,
+          `B) ${optionB}`
+        ]
       });
       
-      console.log(`📋 Domande estratte: ${questions.length}/6`);
-      return questions;
+      console.log(`✅ Trovata domanda: ${dimension}`);
     }
+  }
+  
+  // Se non trova con i pattern, cerca manualmente le 6 dimensioni note
+  if (questions.length === 0) {
+    console.log('⚠️ Pattern non trovati, cerco dimensioni note...');
+    
+    const dimensions = [
+      'Jobs-to-be-Done',
+      'Technology Adoption',
+      'Business Model',
+      'Market Strategy',
+      'Competitive Factors',
+      'Partnership Synergies'
+    ];
+    
+    for (const dim of dimensions) {
+      const regex = new RegExp(`\\*\\*${dim}[^*]*\\*\\*:?\\s*([^\\n]+\\?)`, 'i');
+      const match = text.match(regex);
+      
+      if (match) {
+        // Cerca le opzioni A e B dopo la domanda
+        const startIndex = text.indexOf(match[0]);
+        const chunk = text.slice(startIndex, startIndex + 500);
+        
+        const optionAMatch = chunk.match(/A\)\s*([^\n]+)/);
+        const optionBMatch = chunk.match(/B\)\s*([^\n]+)/);
+        
+        if (optionAMatch && optionBMatch) {
+          questions.push({
+            dimension: dim,
+            question: match[1].trim(),
+            options: [
+              `A) ${optionAMatch[1].trim()}`,
+              `B) ${optionBMatch[1].trim()}`
+            ]
+          });
+          console.log(`✅ Trovata domanda manuale: ${dim}`);
+        }
+      }
+    }
+  }
+  
+  console.log(`📋 Domande estratte: ${questions.length}/6`);
+  return questions;
+}
 
     // PARSING DELLE 9 SEZIONI
     const extractSection = (text, marker) => {

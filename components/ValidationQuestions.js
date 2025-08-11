@@ -1,17 +1,41 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { CheckCircle, AlertCircle } from 'lucide-react';
 
 export default function ValidationQuestions({ questions, onComplete }) {
   const [answers, setAnswers] = useState({});
+  const [wordCounts, setWordCounts] = useState({});
   const [errors, setErrors] = useState({});
 
-  const handleAnswerChange = (dimension, value) => {
+  // Debug nel terminale del server
+  useEffect(() => {
+    console.log('📝 Validation Questions ricevute:', questions?.length || 0, 'domande');
+    if (questions && questions.length > 0) {
+      console.log('Struttura prima domanda:', {
+        dimension: questions[0].dimension,
+        question: questions[0].question?.substring(0, 50) + '...',
+        hasOptions: !!questions[0].options
+      });
+    }
+  }, [questions]);
+
+  const handleTextChange = (dimension, value) => {
+    // Aggiorna la risposta
     setAnswers({
       ...answers,
       [dimension]: value
     });
-    // Clear error for this dimension
-    if (errors[dimension]) {
+    
+    // Calcola il numero di parole
+    const words = value.trim().split(/\s+/).filter(word => word.length > 0);
+    const wordCount = words.length;
+    
+    setWordCounts({
+      ...wordCounts,
+      [dimension]: wordCount
+    });
+
+    // Rimuovi errore se esiste
+    if (errors[dimension] && wordCount >= 20) {
       setErrors({
         ...errors,
         [dimension]: false
@@ -20,11 +44,13 @@ export default function ValidationQuestions({ questions, onComplete }) {
   };
 
   const handleSubmit = () => {
-    // Validate all questions answered
+    // Valida che tutte le risposte abbiano almeno 20 parole
     const newErrors = {};
     questions.forEach(q => {
-      if (!answers[q.dimension]) {
-        newErrors[q.dimension] = true;
+      const answer = answers[q.dimension] || '';
+      const wordCount = answer.trim().split(/\s+/).filter(word => word.length > 0).length;
+      if (wordCount < 20) {
+        newErrors[q.dimension] = `Minimo 20 parole richieste (attuale: ${wordCount})`;
       }
     });
 
@@ -33,11 +59,13 @@ export default function ValidationQuestions({ questions, onComplete }) {
       return;
     }
 
+    console.log('✅ Risposte inviate:', Object.keys(answers).length, 'risposte');
     onComplete(answers);
   };
 
   // Se non ci sono domande, non mostrare nulla
   if (!questions || questions.length === 0) {
+    console.log('⚠️ Nessuna validation question ricevuta');
     return null;
   }
 
@@ -46,8 +74,11 @@ export default function ValidationQuestions({ questions, onComplete }) {
       <h2 className="text-xl font-semibold text-gray-900 mb-2">
         Validazione per Assessment Calibrato
       </h2>
-      <p className="text-gray-600 mb-6">
-        Conferma questi insight strategici per generare uno scoring accurato:
+      <p className="text-gray-600 mb-2">
+        Descrivi il tuo approccio per ogni dimensione strategica.
+      </p>
+      <p className="text-sm text-indigo-600 mb-6">
+        💡 Risposte dettagliate (minimo 20 parole) generano scoring più accurati
       </p>
 
       <div className="space-y-6">
@@ -63,25 +94,36 @@ export default function ValidationQuestions({ questions, onComplete }) {
             </h4>
             <p className="text-sm text-gray-700 mb-3">{q.question}</p>
             
+            {/* TEXTAREA per risposta testuale */}
             <div className="space-y-2">
-              {q.options.map((option, oidx) => (
-                <label key={oidx} className="flex items-center space-x-2 cursor-pointer">
-                  <input
-                    type="radio"
-                    name={`question-${idx}`}
-                    value={option}
-                    onChange={() => handleAnswerChange(q.dimension, option)}
-                    className="text-indigo-600"
-                  />
-                  <span className="text-sm text-gray-700">{option}</span>
-                </label>
-              ))}
+              <textarea
+                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none"
+                rows="4"
+                placeholder="Descrivi il tuo approccio in dettaglio..."
+                value={answers[q.dimension] || ''}
+                onChange={(e) => handleTextChange(q.dimension, e.target.value)}
+              />
+              
+              {/* Contatore parole */}
+              <div className="flex justify-between items-center text-xs">
+                <span className={`${
+                  (wordCounts[q.dimension] || 0) >= 20 
+                    ? 'text-green-600 font-medium' 
+                    : 'text-gray-500'
+                }`}>
+                  {wordCounts[q.dimension] || 0} parole
+                  {(wordCounts[q.dimension] || 0) >= 20 && ' ✓'}
+                </span>
+                <span className="text-gray-400">
+                  Minimo 20 parole
+                </span>
+              </div>
             </div>
             
             {errors[q.dimension] && (
               <p className="mt-2 text-sm text-red-600 flex items-center">
                 <AlertCircle size={14} className="mr-1" />
-                Questa domanda è obbligatoria
+                {errors[q.dimension]}
               </p>
             )}
           </div>
