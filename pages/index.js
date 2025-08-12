@@ -829,15 +829,30 @@ console.log('🎯 RESULT DAL BACKEND:', {
                      currentStep === 3 && (
                       <div className="mt-6">
                         <ValidationQuestions 
-                          questions={message.parsedSections.validationQuestions}
-                          onComplete={async (answers) => {
+  questions={message.parsedSections.validationQuestions}
+  isEditingAnswers={isEditingAnswers}
+  submissionCount={submissionCount}
+  onComplete={async (answers) => {
                             console.log('Validation answers:', answers);
-                            
-                            // Salva le risposte
-                            setValidationAnswers(answers);
-                            
-                            // Mostra loading
-                            setIsLoading(true);
+
+// Se stiamo modificando, salva lo score precedente
+if (isEditingAnswers && messages.length > 0) {
+  const lastScoringMessage = messages.filter(m => m.isScoring).pop();
+  if (lastScoringMessage && lastScoringMessage.scoringData) {
+    setPreviousScore(lastScoringMessage.scoringData.overall.score);
+    setScoringHistory(prev => [...prev, {
+      score: lastScoringMessage.scoringData.overall.score,
+      timestamp: new Date(),
+      iteration: submissionCount
+    }]);
+  }
+}
+
+// Salva le risposte
+setValidationAnswers(answers);
+
+// Mostra loading
+setIsLoading(true);
                             
                             try {
                               // Prepara i dati per lo scoring
@@ -872,16 +887,27 @@ console.log('🎯 RESULT DAL BACKEND:', {
                               }
                               
                               // Aggiungi il messaggio con lo scoring
-                              const scoringMessage = {
-                                id: Date.now().toString(),
-                                role: 'assistant',
-                                content: 'Ho generato lo scoring calibrato basato sulla tua validazione:',
-                                timestamp: new Date(),
-                                scoringData: result.scoring,
-                                isScoring: true
-                              };
-                              
-                              setMessages(prev => [...prev, scoringMessage]);
+const scoringMessage = {
+  id: Date.now().toString(),
+  role: 'assistant',
+  content: submissionCount > 0 
+  ? `Ho rigenerato lo scoring (Iterazione ${submissionCount + 1}/3):` 
+  : 'Ho generato lo scoring calibrato basato sulla tua validazione:',
+  timestamp: new Date(),
+  scoringData: result.scoring,
+  isScoring: true,
+  previousScore: previousScore,
+  iterationNumber: submissionCount + 1
+};
+
+setMessages(prev => [...prev, scoringMessage]);
+
+// Incrementa il contatore sempre quando generiamo uno scoring
+setSubmissionCount(prev => prev + 1);
+// Resetta il flag di editing se stavamo modificando
+if (isEditingAnswers) {
+  setIsEditingAnswers(false);
+}
                               
                             } catch (error) {
                               console.error('Error generating scoring:', error);
@@ -908,6 +934,18 @@ console.log('🎯 RESULT DAL BACKEND:', {
                         </div>
                         <div className="text-right">
                           <div className="text-3xl font-bold">{message.scoringData.overall.score}/10</div>
+                          {message.previousScore && (
+  <div className={`text-lg font-bold mt-2 ${
+    message.scoringData.overall.score > message.previousScore 
+      ? 'text-green-600' 
+      : message.scoringData.overall.score < message.previousScore 
+        ? 'text-red-600' 
+        : 'text-gray-600'
+  }`}>
+    Δ {message.scoringData.overall.score > message.previousScore ? '+' : ''}
+    {(message.scoringData.overall.score - message.previousScore).toFixed(1)}
+  </div>
+)}
                           <div className="text-indigo-200">{message.scoringData.overall.rating}</div>
                         </div>
                       </div>

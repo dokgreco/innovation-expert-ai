@@ -1,7 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { CheckCircle, AlertCircle } from 'lucide-react';
 
-export default function ValidationQuestions({ questions, onComplete }) {
+export default function ValidationQuestions({ 
+  questions, 
+  onComplete, 
+  isEditingAnswers = false,
+  submissionCount = 0 
+}) {
   const [answers, setAnswers] = useState({});
   const [wordCounts, setWordCounts] = useState({});
   const [errors, setErrors] = useState({});
@@ -131,12 +136,12 @@ export default function ValidationQuestions({ questions, onComplete }) {
       </div>
 
       <button
-        onClick={handleSubmit}
-        className="mt-6 w-full px-4 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors flex items-center justify-center"
-      >
-        <CheckCircle className="mr-2" size={16} />
-        Genera Scoring Calibrato
-      </button>
+  onClick={handleSubmit}
+  className="mt-6 w-full px-4 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors flex items-center justify-center"
+>
+  <CheckCircle className="mr-2" size={16} />
+  {isEditingAnswers ? `Rigenera Scoring (Tentativo ${submissionCount + 1}/3)` : 'Genera Scoring Calibrato'}
+</button>
     </div>
   );
 }
