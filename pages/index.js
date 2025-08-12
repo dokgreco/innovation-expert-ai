@@ -153,6 +153,19 @@ const sectionKeyMapping = {
   "partners": "partnership"
 };
 
+// Helper function per formattare risposte Deep Dive
+const formatDeepDiveResponse = (content) => {
+  return content
+    .replace(/TIMELINE:/gi, '<h4 class="text-indigo-600 font-semibold mt-4 mb-2">📅 TIMELINE:</h4>')
+    .replace(/KPI.*?:/gi, '<h4 class="text-green-600 font-semibold mt-4 mb-2">📊 KPI VALIDAZIONE:</h4>')
+    .replace(/NEXT STEP.*?:/gi, '<h4 class="text-purple-600 font-semibold mt-4 mb-2">🎯 NEXT STEP:</h4>')
+    .replace(/FASE \d+/gi, '<strong class="text-gray-900">$&</strong>')
+    .replace(/•/g, '<span class="text-indigo-500 font-bold">•</span>')
+    .replace(/Case #(\d+)/gi, '<span class="font-medium text-blue-600">Case #$1</span>')
+    .replace(/(\d+%|\€[\d,]+k?)/g, '<span class="font-bold text-green-600">$1</span>')
+    .replace(/\n\n/g, '</p><p class="mb-3">')
+    .replace(/\n/g, '<br/>');
+};
 const handleSectionQuestion = async (section, question) => {
   if (!question.trim()) return;
   
@@ -535,7 +548,7 @@ console.log('🎯 RESULT DAL BACKEND:', {
         {/* Deep Dive Content */}
 <div className="space-y-6">
   {/* Sezione contenuto principale */}
-  <div className="bg-white border border-gray-200 rounded-lg p-6">
+  <div className="bg-white border border-gray-200 rounded-lg p-6 w-full">
     <h2 className="text-2xl font-bold text-gray-900 mb-4">
       {deepDiveMode === 'jtbd-trends' && '🎯 Jobs-to-be-Done & Market Trends'}
 {deepDiveMode === 'competitive' && '⚔️ Competitive Positioning Canvas'}
@@ -640,23 +653,40 @@ console.log('🎯 RESULT DAL BACKEND:', {
     
     {/* Thread conversazione per questa sezione */}
     {sectionConversations[deepDiveMode] && sectionConversations[deepDiveMode].length > 0 && (
-      <div className="mb-4 space-y-3 max-h-60 overflow-y-auto">
-        {sectionConversations[deepDiveMode].map((msg, idx) => (
-          <div key={idx} className={`flex gap-3 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-            <div className={`max-w-xs p-3 rounded-lg ${
-              msg.role === 'user' 
-                ? 'bg-indigo-600 text-white' 
-                : 'bg-gray-100 text-gray-800'
-            }`}>
-              <div className="text-sm">{msg.content}</div>
-              <div className="text-xs opacity-70 mt-1">
+  <div className="space-y-6 max-h-96 overflow-y-auto border-t border-gray-100 pt-4">
+    {sectionConversations[deepDiveMode].map((msg, idx) => (
+      <div key={idx} className="border-l-4 border-indigo-500 pl-4">
+        {msg.role === 'user' ? (
+          <div className="mb-2">
+            <div className="flex items-center gap-2 mb-1">
+              <User size={16} className="text-gray-600" />
+              <span className="text-sm font-medium text-gray-700">La tua domanda</span>
+              <span className="text-xs text-gray-500">
                 {msg.timestamp.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}
-              </div>
+              </span>
+            </div>
+            <div className="text-gray-800 bg-gray-50 p-4 rounded-lg">
+              {msg.content}
             </div>
           </div>
-        ))}
+        ) : (
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <Brain size={16} className="text-indigo-600" />
+              <span className="text-sm font-medium text-indigo-700">Analisi Expert</span>
+              <span className="text-xs text-gray-500">
+                {msg.timestamp.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}
+              </span>
+            </div>
+            <div className="prose prose-sm max-w-none text-gray-800 bg-white p-6 rounded-lg border border-gray-200">
+              <div dangerouslySetInnerHTML={{ __html: formatDeepDiveResponse(msg.content) }} />
+            </div>
+          </div>
+        )}
       </div>
-    )}
+    ))}
+  </div>
+)}
     
     {/* Loading state */}
     {sectionLoading[deepDiveMode] && (
@@ -668,25 +698,20 @@ console.log('🎯 RESULT DAL BACKEND:', {
     
     {/* Input area */}
     <div className="flex gap-2">
-      <input
-        type="text"
-        value={sectionInputs[deepDiveMode] || ''}
-        onChange={(e) => setSectionInputs({ ...sectionInputs, [deepDiveMode]: e.target.value })}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' && !e.shiftKey) {
-            handleSectionQuestion(deepDiveMode, sectionInputs[deepDiveMode]);
-          }
-        }}
-        placeholder={`Chiedi approfondimenti su ${
-  deepDiveMode === 'jtbd-trends' ? 'Jobs-to-be-Done e trend di mercato' :
-  deepDiveMode === 'competitive' ? 'posizionamento competitivo' :
-  deepDiveMode === 'tech-validation' ? 'tecnologie e validazione' :
-  deepDiveMode === 'process-metrics' ? 'metriche e processi' :
-  'strategie di partnership'
-}...`}
-        className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm"
-        disabled={sectionLoading[deepDiveMode]}
-      />
+      <textarea
+  value={sectionInputs[deepDiveMode] || ''}
+  onChange={(e) => setSectionInputs({ ...sectionInputs, [deepDiveMode]: e.target.value })}
+  onKeyDown={(e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSectionQuestion(deepDiveMode, sectionInputs[deepDiveMode]);
+    }
+  }}
+  placeholder={`Approfondisci aspetti specifici di questa sezione... (es: "Quali sono i KPI critici per i primi 6 mesi?" o "Come validare il product-market fit?")`}
+  className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none"
+  rows="2"
+  disabled={sectionLoading[deepDiveMode]}
+/>
       <button
         onClick={() => handleSectionQuestion(deepDiveMode, sectionInputs[deepDiveMode])}
         disabled={!sectionInputs[deepDiveMode]?.trim() || sectionLoading[deepDiveMode]}
@@ -1007,7 +1032,7 @@ console.log('🎯 RESULT DAL BACKEND:', {
         </div>
 
         {/* Input Area */}
-        <div className="p-4 border-t border-gray-200 bg-white">
+        <div className={`p-4 border-t border-gray-200 bg-white ${deepDiveMode ? 'hidden' : ''}`}>
           <div className="flex gap-2">
             <input
               type="text"
