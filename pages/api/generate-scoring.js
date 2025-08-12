@@ -4,310 +4,262 @@ export default async function handler(req, res) {
 
   // ========== NUOVO ALGORITMO SCORING AVANZATO E.2 ==========
 
-// Check 1: Specificità (35% peso) - cerca metriche, numeri, timeline
-function checkSpecificity(answer) {
-  let score = 5; // Base score
-  const answerLower = answer.toLowerCase();
-  
-  // Bonus per numeri e metriche
-  const hasNumbers = /\d+/.test(answer);
-  const hasPercentage = /%/.test(answer);
-  const hasCurrency = /[€$£]\d+|[\d,]+[kKmM]?\s*(euro|eur|usd|dollari?)/i.test(answer);
-  const hasTimeline = /(giorni?|settiman[ae]|mes[ei]|ann[oi]|Q[1-4]|trimestre|semester)/i.test(answer);
-  const hasMetrics = /(kpi|roi|cac|ltv|arpu|churn|conversion|retention)/i.test(answerLower);
-  
-  if (hasNumbers) score += 1.5;
-  if (hasPercentage) score += 1;
-  if (hasCurrency) score += 1;
-  if (hasTimeline) score += 1;
-  if (hasMetrics) score += 0.5;
-  
-  return Math.min(score, 10);
-}
-
-// Check 2: Allineamento Best Practices (30% peso)
-function checkAlignment(answer, dimension, analysisContext) {
-  let score = 5;
-  const answerLower = answer.toLowerCase();
-  
-  // Keywords specifici per dimensione allineati con Deep Dive sections
-  const alignmentKeywords = {
-    "Jobs-to-be-Done & Market Trends": ["validate", "customer", "pain point", "urgency", "tam", "sam", "trend"],
-    "Competitive Positioning Canvas": ["differentiation", "moat", "unique", "competitor", "advantage", "positioning"],
-    "Technology Adoption & Validation": ["scalable", "api", "architecture", "mvp", "tech stack", "infrastructure"],
-    "Process & Metrics": ["process", "workflow", "efficiency", "automation", "metrics", "dashboard", "tracking"],
-    "Partnership Activation": ["partner", "channel", "distribution", "integration", "alliance", "ecosystem"]
-  };
-  
-  const keywords = alignmentKeywords[dimension] || [];
-  let matchCount = 0;
-  
-  keywords.forEach(keyword => {
-    if (answerLower.includes(keyword)) {
-      matchCount++;
-      score += 0.7;
-    }
-  });
-  
-  // Bonus se cita il verticale dall'analisi
-  if (analysisContext && analysisContext.verticals) {
-    const vertical = analysisContext.verticals[0]?.title || '';
-    if (answerLower.includes(vertical.toLowerCase())) score += 1;
-  }
-  
-  return Math.min(score, 10);
-}
-
-// Check 3: Completezza (20% peso)
-function checkCompleteness(answer) {
-  const wordCount = answer.split(/\s+/).length;
-  let score = 5;
-  
-  // Scoring basato su lunghezza ottimale (50-150 parole)
-  if (wordCount >= 50 && wordCount <= 150) {
-    score = 9; // Ottimale
-  } else if (wordCount >= 30 && wordCount < 50) {
-    score = 7;
-  } else if (wordCount > 150 && wordCount <= 200) {
-    score = 7;
-  } else if (wordCount >= 20 && wordCount < 30) {
-    score = 5;
-  } else if (wordCount > 200) {
-    score = 4; // Troppo lungo
-  } else {
-    score = 3; // Troppo corto
-  }
-  
-  // Bonus per struttura (punti elenco, fasi, etc.)
-  const hasStructure = /[•\-\*]|\d+[\.\)]/m.test(answer) || /primo|secondo|terzo|fase|step/i.test(answer);
-  if (hasStructure) score += 1;
-  
-  return Math.min(score, 10);
-}
-
-// Check 4: Actionability (15% peso)
-function checkActionability(answer) {
-  let score = 5;
-  const answerLower = answer.toLowerCase();
-  
-  // Keywords che indicano azioni concrete
-  const actionKeywords = [
-    "implementer", "svilupper", "creer", "lancer", "tester", "validator",
-    "implement", "develop", "create", "launch", "test", "validate",
-    "entro", "within", "prima di", "dopo", "prossim", "next",
-    "piano", "plan", "strategia", "strategy", "approccio", "approach"
-  ];
-  
-  let actionCount = 0;
-  actionKeywords.forEach(keyword => {
-    if (answerLower.includes(keyword)) {
-      actionCount++;
-      score += 0.5;
-    }
-  });
-  
-  // Bonus per next steps chiari
-  if (/(prossimi passi|next step|prima fase|priorità)/i.test(answer)) score += 1.5;
-  
-  return Math.min(score, 10);
-}
-
-// Funzione principale di scoring avanzato
-function advancedScoring(answer, dimension, analysisContext) {
-  // Calcola i 4 punteggi
-  const specificityScore = checkSpecificity(answer);
-  const alignmentScore = checkAlignment(answer, dimension, analysisContext);
-  const completenessScore = checkCompleteness(answer);
-  const actionabilityScore = checkActionability(answer);
-  
-  // Calcola media pesata
-  const weightedScore = (
-    specificityScore * 0.35 +
-    alignmentScore * 0.30 +
-    completenessScore * 0.20 +
-    actionabilityScore * 0.15
-  );
-  
-  // Identifica gaps e strengths
-  const gaps = [];
-  const strengths = [];
-  
-  if (specificityScore < 6) {
-    gaps.push({
-      area: "Specificità",
-      issue: "Mancano metriche concrete e timeline specifiche",
-      suggestion: "Aggiungi KPI numerici, percentuali e tempistiche precise (es: 'ridurre churn del 15% in 6 mesi')"
-    });
-  } else if (specificityScore >= 8) {
-    strengths.push("Ottima specificità con metriche e timeline concrete");
-  }
-  
-  if (alignmentScore < 6) {
-    gaps.push({
-      area: "Allineamento",
-      issue: "Scarso allineamento con best practices del settore",
-      suggestion: "Utilizza terminologia specifica del verticale e riferimenti a metodologie consolidate"
-    });
-  } else if (alignmentScore >= 8) {
-    strengths.push("Forte allineamento con best practices del verticale identificato");
-  }
-  
-  if (completenessScore < 6) {
-    gaps.push({
-      area: "Completezza",
-      issue: "Risposta troppo sintetica o non strutturata",
-      suggestion: "Elabora la risposta con 50-150 parole, strutturando in punti chiave"
-    });
-  } else if (completenessScore >= 8) {
-    strengths.push("Risposta completa e ben strutturata");
-  }
-  
-  if (actionabilityScore < 6) {
-    gaps.push({
-      area: "Actionability",
-      issue: "Mancano azioni concrete e next steps",
-      suggestion: "Definisci azioni specifiche con criteri di successo e timeline di implementazione"
-    });
-  } else if (actionabilityScore >= 8) {
-    strengths.push("Piano d'azione chiaro con next steps definiti");
-  }
-  
-  return {
-    totalScore: Math.round(weightedScore * 10) / 10,
-    breakdown: {
-      specificity: Math.round(specificityScore * 10) / 10,
-      alignment: Math.round(alignmentScore * 10) / 10,
-      completeness: Math.round(completenessScore * 10) / 10,
-      actionability: Math.round(actionabilityScore * 10) / 10
-    },
-    gaps: gaps,
-    strengths: strengths
-  };
-}
-
-// ========== FINE NUOVO ALGORITMO SCORING AVANZATO ==========
-  function analyzeTextAnswer(answer, dimension) {
-    // Keywords specifici per ogni dimensione
-    const keywordSets = {
-  "Jobs-to-be-Done & Market Trends": ["specific", "validate", "customer", "pain", "measure", "feedback", "interview", "problem", "solution", "urgency", "trend", "market", "demand", "growth"],
-  "Competitive Positioning Canvas": ["differentiation", "moat", "unique", "positioning", "advantage", "competitor", "benchmark", "superior", "defend", "barrier"],
-  "Technology Adoption & Validation": ["scalable", "API", "architecture", "stack", "tested", "MVP", "cloud", "security", "integration", "performance", "validation", "technical"],
-  "Process & Metrics": ["KPI", "metric", "measure", "process", "efficiency", "optimize", "workflow", "automation", "tracking", "dashboard", "target", "benchmark"],
-  "Partnership Activation": ["strategic", "channel", "distribution", "integration", "alliance", "ecosystem", "collaboration", "vendor", "reseller", "synergy", "partner", "B2B"]
-};
-    
-    const keywords = keywordSets[dimension] || [];
-    const answerLower = answer.toLowerCase();
-    const wordCount = answer.split(/\s+/).length;
-    
-    // Calcola score base
+  // Check 1: Specificità (35% peso) - cerca metriche, numeri, timeline
+  function checkSpecificity(answer) {
     let score = 5; // Base score
+    const answerLower = answer.toLowerCase();
     
-    // Bonus per lunghezza (più dettagliato = meglio)
-    if (wordCount >= 50) score += 1.5;
-    else if (wordCount >= 30) score += 1;
-    else if (wordCount >= 20) score += 0.5;
+    // Bonus per numeri e metriche
+    const hasNumbers = /\d+/.test(answer);
+    const hasPercentage = /%/.test(answer);
+    const hasCurrency = /[€$£]\d+|[\d,]+[kKmM]?\s*(euro|eur|usd|dollari?)/i.test(answer);
+    const hasTimeline = /(giorni?|settiman[ae]|mes[ei]|ann[oi]|Q[1-4]|trimestre|semester)/i.test(answer);
+    const hasMetrics = /(kpi|roi|cac|ltv|arpu|churn|conversion|retention)/i.test(answerLower);
     
-    // Bonus per keywords trovate
-    let keywordsFound = 0;
+    if (hasNumbers) score += 1.5;
+    if (hasPercentage) score += 1;
+    if (hasCurrency) score += 1;
+    if (hasTimeline) score += 1;
+    if (hasMetrics) score += 0.5;
+    
+    return Math.min(score, 10);
+  }
+
+  // Check 2: Allineamento Best Practices (30% peso)
+  function checkAlignment(answer, dimension, analysisContext) {
+    let score = 5;
+    const answerLower = answer.toLowerCase();
+    
+    // Keywords specifici per dimensione allineati con Deep Dive sections
+    const alignmentKeywords = {
+      "Jobs-to-be-Done & Market Trends": ["validate", "customer", "pain point", "urgency", "tam", "sam", "trend"],
+      "Competitive Positioning Canvas": ["differentiation", "moat", "unique", "competitor", "advantage", "positioning"],
+      "Technology Adoption & Validation": ["scalable", "api", "architecture", "mvp", "tech stack", "infrastructure"],
+      "Process & Metrics": ["process", "workflow", "efficiency", "automation", "metrics", "dashboard", "tracking"],
+      "Partnership Activation": ["partner", "channel", "distribution", "integration", "alliance", "ecosystem"]
+    };
+    
+    const keywords = alignmentKeywords[dimension] || [];
+    let matchCount = 0;
+    
     keywords.forEach(keyword => {
       if (answerLower.includes(keyword)) {
-        keywordsFound++;
-        score += 0.3;
+        matchCount++;
+        score += 0.7;
       }
     });
     
-    // Bonus per specificità (numeri, percentuali, timeline)
-    const hasNumbers = /\d+/.test(answer);
-    const hasPercentage = /%/.test(answer);
-    const hasTimeline = /(month|week|day|year|Q[1-4])/i.test(answer);
+    // Bonus se cita il verticale dall'analisi
+    if (analysisContext && analysisContext.verticals) {
+      const vertical = analysisContext.verticals[0]?.title || '';
+      if (answerLower.includes(vertical.toLowerCase())) score += 1;
+    }
     
-    if (hasNumbers) score += 0.5;
-    if (hasPercentage) score += 0.3;
-    if (hasTimeline) score += 0.4;
+    return Math.min(score, 10);
+  }
+
+  // Check 3: Completezza (20% peso)
+  function checkCompleteness(answer) {
+    const wordCount = answer.split(/\s+/).length;
+    let score = 5;
     
-    // Cap a 10
+    // Scoring basato su lunghezza ottimale (50-150 parole)
+    if (wordCount >= 50 && wordCount <= 150) {
+      score = 9; // Ottimale
+    } else if (wordCount >= 30 && wordCount < 50) {
+      score = 7;
+    } else if (wordCount > 150 && wordCount <= 200) {
+      score = 7;
+    } else if (wordCount >= 20 && wordCount < 30) {
+      score = 5;
+    } else if (wordCount > 200) {
+      score = 4; // Troppo lungo
+    } else {
+      score = 3; // Troppo corto
+    }
+    
+    // Bonus per struttura (punti elenco, fasi, etc.)
+    const hasStructure = /[•\-\*]|\d+[\.\)]/m.test(answer) || /primo|secondo|terzo|fase|step/i.test(answer);
+    if (hasStructure) score += 1;
+    
+    return Math.min(score, 10);
+  }
+
+  // Check 4: Actionability (15% peso)
+  function checkActionability(answer) {
+    let score = 5;
+    const answerLower = answer.toLowerCase();
+    
+    // Keywords che indicano azioni concrete
+    const actionKeywords = [
+      "implementer", "svilupper", "creer", "lancer", "tester", "validator",
+      "implement", "develop", "create", "launch", "test", "validate",
+      "entro", "within", "prima di", "dopo", "prossim", "next",
+      "piano", "plan", "strategia", "strategy", "approccio", "approach"
+    ];
+    
+    let actionCount = 0;
+    actionKeywords.forEach(keyword => {
+      if (answerLower.includes(keyword)) {
+        actionCount++;
+        score += 0.5;
+      }
+    });
+    
+    // Bonus per next steps chiari
+    if (/(prossimi passi|next step|prima fase|priorità)/i.test(answer)) score += 1.5;
+    
+    return Math.min(score, 10);
+  }
+
+  // Funzione principale di scoring avanzato
+  function advancedScoring(answer, dimension, analysisContext) {
+    // Calcola i 4 punteggi
+    const specificityScore = checkSpecificity(answer);
+    const alignmentScore = checkAlignment(answer, dimension, analysisContext);
+    const completenessScore = checkCompleteness(answer);
+    const actionabilityScore = checkActionability(answer);
+    
+    // Calcola media pesata
+    const weightedScore = (
+      specificityScore * 0.35 +
+      alignmentScore * 0.30 +
+      completenessScore * 0.20 +
+      actionabilityScore * 0.15
+    );
+    
+    // Identifica gaps e strengths
+    const gaps = [];
+    const strengths = [];
+    
+    if (specificityScore < 6) {
+      gaps.push({
+        area: "Specificità",
+        issue: "Mancano metriche concrete e timeline specifiche",
+        suggestion: "Aggiungi KPI numerici, percentuali e tempistiche precise (es: 'ridurre churn del 15% in 6 mesi')"
+      });
+    } else if (specificityScore >= 8) {
+      strengths.push("Ottima specificità con metriche e timeline concrete");
+    }
+    
+    if (alignmentScore < 6) {
+      gaps.push({
+        area: "Allineamento",
+        issue: "Scarso allineamento con best practices del settore",
+        suggestion: "Utilizza terminologia specifica del verticale e riferimenti a metodologie consolidate"
+      });
+    } else if (alignmentScore >= 8) {
+      strengths.push("Forte allineamento con best practices del verticale identificato");
+    }
+    
+    if (completenessScore < 6) {
+      gaps.push({
+        area: "Completezza",
+        issue: "Risposta troppo sintetica o non strutturata",
+        suggestion: "Elabora la risposta con 50-150 parole, strutturando in punti chiave"
+      });
+    } else if (completenessScore >= 8) {
+      strengths.push("Risposta completa e ben strutturata");
+    }
+    
+    if (actionabilityScore < 6) {
+      gaps.push({
+        area: "Actionability",
+        issue: "Mancano azioni concrete e next steps",
+        suggestion: "Definisci azioni specifiche con criteri di successo e timeline di implementazione"
+      });
+    } else if (actionabilityScore >= 8) {
+      strengths.push("Piano d'azione chiaro con next steps definiti");
+    }
+    
     return {
-      score: Math.min(Math.round(score * 10) / 10, 10),
-      keywordsFound,
-      wordCount,
-      hasSpecifics: hasNumbers || hasPercentage || hasTimeline
+      totalScore: Math.round(weightedScore * 10) / 10,
+      breakdown: {
+        specificity: Math.round(specificityScore * 10) / 10,
+        alignment: Math.round(alignmentScore * 10) / 10,
+        completeness: Math.round(completenessScore * 10) / 10,
+        actionability: Math.round(actionabilityScore * 10) / 10
+      },
+      gaps: gaps,
+      strengths: strengths
     };
   }
 
+  // ========== FINE NUOVO ALGORITMO SCORING AVANZATO ==========
+  
   function generateTextBasedPrompt(analysisData, validationAnswers) {
-  // Mappa le dimensioni alle 5 Deep Dive sections
-  const dimensionMapping = {
-    "Jobs-to-be-Done": "Jobs-to-be-Done & Market Trends",
-    "Technology Adoption": "Technology Adoption & Validation",
-    "Business Model": "Process & Metrics",
-    "Market Strategy": "Competitive Positioning Canvas",
-    "Competitive Factors": "Competitive Positioning Canvas",
-    "Partnership Synergies": "Partnership Activation"
-  };
-  
-  // Analizza ogni risposta con il NUOVO algoritmo avanzato
-  const advancedAnalysis = {};
-  const allGaps = [];
-  const allStrengths = [];
-  
-  Object.entries(validationAnswers).forEach(([dimension, answer]) => {
-    const mappedDimension = dimensionMapping[dimension] || dimension;
-    const analysis = advancedScoring(answer, mappedDimension, analysisData);
+    // Mappa le dimensioni alle 5 Deep Dive sections
+    const dimensionMapping = {
+      "Jobs-to-be-Done": "Jobs-to-be-Done & Market Trends",
+      "Technology Adoption": "Technology Adoption & Validation",
+      "Business Model": "Process & Metrics",
+      "Market Strategy": "Competitive Positioning Canvas",
+      "Competitive Factors": "Competitive Positioning Canvas",
+      "Partnership Synergies": "Partnership Activation"
+    };
     
-    advancedAnalysis[dimension] = analysis;
+    // Analizza ogni risposta con il NUOVO algoritmo avanzato
+    const advancedAnalysis = {};
+    const allGaps = [];
+    const allStrengths = [];
     
-    // Raccogli tutti i gaps e strengths
-    analysis.gaps.forEach(gap => {
-      allGaps.push({
-        dimension: dimension,
-        ...gap
+    Object.entries(validationAnswers).forEach(([dimension, answer]) => {
+      const mappedDimension = dimensionMapping[dimension] || dimension;
+      const analysis = advancedScoring(answer, mappedDimension, analysisData);
+      
+      advancedAnalysis[dimension] = analysis;
+      
+      // Raccogli tutti i gaps e strengths
+      analysis.gaps.forEach(gap => {
+        allGaps.push({
+          dimension: dimension,
+          ...gap
+        });
+      });
+      
+      analysis.strengths.forEach(strength => {
+        allStrengths.push({
+          dimension: dimension,
+          text: strength
+        });
       });
     });
     
-    analysis.strengths.forEach(strength => {
-      allStrengths.push({
-        dimension: dimension,
-        text: strength
+    // Calcola overall readiness score
+    const scores = Object.values(advancedAnalysis).map(a => a.totalScore);
+    const overallScore = scores.reduce((a, b) => a + b, 0) / scores.length;
+    
+    // Identifica i top 3 rischi basati sui gap più critici
+    const topRisks = allGaps
+      .sort((a, b) => {
+        // Prioritizza per gravità del gap
+        const priorityOrder = ["Specificità", "Allineamento", "Actionability", "Completezza"];
+        return priorityOrder.indexOf(a.area) - priorityOrder.indexOf(b.area);
+      })
+      .slice(0, 3)
+      .map((gap, index) => {
+        const riskLevel = index === 0 ? "Alto" : index === 1 ? "Medio" : "Basso";
+        return {
+          level: riskLevel,
+          dimension: gap.dimension,
+          area: gap.area,
+          issue: gap.issue,
+          suggestion: gap.suggestion
+        };
       });
-    });
-  });
-  
-  // Calcola overall readiness score
-  const scores = Object.values(advancedAnalysis).map(a => a.totalScore);
-  const overallScore = scores.reduce((a, b) => a + b, 0) / scores.length;
-  
-  // Identifica i top 3 rischi basati sui gap più critici
-  const topRisks = allGaps
-    .sort((a, b) => {
-      // Prioritizza per gravità del gap
-      const priorityOrder = ["Specificità", "Allineamento", "Actionability", "Completezza"];
-      return priorityOrder.indexOf(a.area) - priorityOrder.indexOf(b.area);
-    })
-    .slice(0, 3)
-    .map((gap, index) => {
-      const riskLevel = index === 0 ? "Alto" : index === 1 ? "Medio" : "Basso";
-      return {
-        level: riskLevel,
-        dimension: gap.dimension,
-        area: gap.area,
-        issue: gap.issue,
-        suggestion: gap.suggestion
-      };
-    });
-  
-  // Prepara il context arricchito per Claude
-  const enrichedContext = {
-    overallScore: Math.round(overallScore * 10) / 10,
-    dimensionScores: advancedAnalysis,
-    topRisks: topRisks,
-    strengths: allStrengths.slice(0, 5), // Top 5 strengths
-    gaps: allGaps,
-    analysisContext: analysisData
-  };
-  
-  return enrichedContext;
-}
+    
+    // Prepara il context arricchito per Claude
+    const enrichedContext = {
+      overallScore: Math.round(overallScore * 10) / 10,
+      dimensionScores: advancedAnalysis,
+      topRisks: topRisks,
+      strengths: allStrengths.slice(0, 5), // Top 5 strengths
+      gaps: allGaps,
+      analysisContext: analysisData
+    };
+    
+    return enrichedContext;
+  }
   
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
@@ -315,7 +267,6 @@ function advancedScoring(answer, dimension, analysisContext) {
 
   try {
     const { analysisData, validationAnswers } = req.body;
-const enrichedData = generateTextBasedPrompt(analysisData, validationAnswers);
 
     // Verifica che abbiamo tutti i dati necessari
     if (!analysisData || !validationAnswers) {
@@ -325,10 +276,12 @@ const enrichedData = generateTextBasedPrompt(analysisData, validationAnswers);
       });
     }
 
-    // Analizza le risposte testuali
-    const { textAnalysis } = generateTextBasedPrompt(analysisData, validationAnswers);
+    // CORREZIONE: Usa direttamente il risultato di generateTextBasedPrompt
+    const enrichedData = generateTextBasedPrompt(analysisData, validationAnswers);
+    
+    // enrichedData già contiene tutto: overallScore, dimensionScores, topRisks, etc.
 
-// Prepara il prompt con i dati arricchiti
+    // Prepara il prompt con i dati arricchiti
     const scoringPrompt = `
 Sei un Innovation Expert che deve generare un assessment finale basato sull'analisi avanzata delle risposte.
 
@@ -346,42 +299,58 @@ ${dim}: ${analysis.totalScore}/10
 - Allineamento: ${analysis.breakdown.alignment}/10
 - Completezza: ${analysis.breakdown.completeness}/10
 - Actionability: ${analysis.breakdown.actionability}/10
+${analysis.gaps.length > 0 ? '- Gap principale: ' + analysis.gaps[0].issue : ''}
+${analysis.strengths.length > 0 ? '- Punto di forza: ' + analysis.strengths[0] : ''}
 `).join('\n')}
+
+=== RISCHI IDENTIFICATI (basati sui gap) ===
+${enrichedData.topRisks.map((risk, idx) => `
+Rischio ${idx + 1} (${risk.level}):
+- Area: ${risk.area}
+- Dimensione: ${risk.dimension}
+- Issue: ${risk.issue}
+- Suggerimento: ${risk.suggestion}
+`).join('\n')}
+
+=== PUNTI DI FORZA ===
+${enrichedData.strengths.map(s => `- ${s.text} (${s.dimension})`).join('\n')}
 
 === GENERA OUTPUT STRUTTURATO ===
 
-FORMAT RICHIESTO:
+IMPORTANTE: Usa ESATTAMENTE i punteggi calcolati sopra per ogni dimensione.
 
 1. OVERALL SCORE
 - Score: ${enrichedData.overallScore}/10
-- Rating: ${enrichedData.overallScore > 8 ? "Altamente Promettente" : enrichedData.overallScore > 6 ? "Promettente" : enrichedData.overallScore > 4 ? "Moderato" : "Da Affinare"}
+- Rating: "${enrichedData.overallScore > 8 ? 'Altamente Promettente' : enrichedData.overallScore > 6 ? 'Promettente' : enrichedData.overallScore > 4 ? 'Da Sviluppare' : 'Da Affinare'}"
 
-2. SCORING PER DIMENSIONE:
+2. SCORING PER DIMENSIONE
+Usa ESATTAMENTE questi punteggi dal breakdown sopra:
+
 ${Object.entries(enrichedData.dimensionScores).map(([dim, analysis]) => `
 ${dim}:
 - Score: ${analysis.totalScore}/10
-- Rationale: Valutazione basata su specificità (${analysis.breakdown.specificity}/10), allineamento best practices (${analysis.breakdown.alignment}/10), completezza (${analysis.breakdown.completeness}/10) e actionability (${analysis.breakdown.actionability}/10)
+- Rationale: Basato su specificità (${analysis.breakdown.specificity}/10), allineamento verticale (${analysis.breakdown.alignment}/10), completezza risposta (${analysis.breakdown.completeness}/10) e actionability (${analysis.breakdown.actionability}/10). ${analysis.gaps.length > 0 ? 'Gap identificato: ' + analysis.gaps[0].issue : 'Punto di forza: ' + analysis.strengths[0]}
 `).join('\n')}
 
 3. RISK ASSESSMENT & IMPROVEMENT AREAS
 
-RISCHI IDENTIFICATI (basati su gap analysis):
-${enrichedData.topRisks.map(risk => `
-Rischio ${risk.level}: ${risk.area} insufficiente in ${risk.dimension}
-- Problema: ${risk.issue}
-- Impatto: Potrebbe compromettere l'esecuzione e la scalabilità
-- Suggerimento: ${risk.suggestion}
+${enrichedData.topRisks.map((risk, idx) => `
+Rischio ${risk.level}:
+- Fattore: ${risk.area} - ${risk.dimension}
+- Livello: ${risk.level}
+- Descrizione: ${risk.issue}
+- Mitigazione: ${risk.suggestion}
 `).join('\n')}
 
-PUNTI DI FORZA (identificati nelle risposte):
-${enrichedData.strengths.map(s => `- ${s.text} (${s.dimension})`).join('\n')}
+PUNTI DI FORZA IDENTIFICATI:
+${enrichedData.strengths.slice(0, 3).map(s => `- ${s.text}`).join('\n')}
 
-TOP 3 AZIONI per migliorare lo score:
-${enrichedData.topRisks.slice(0, 3).map((risk, i) => `
-${i + 1}. ${risk.suggestion} (Area: ${risk.dimension})
-`).join('')}
+TOP 3 AZIONI PER MIGLIORARE LO SCORE:
+1. ${enrichedData.topRisks[0] ? enrichedData.topRisks[0].suggestion : 'Continuare validazione con clienti'}
+2. ${enrichedData.topRisks[1] ? enrichedData.topRisks[1].suggestion : 'Rafforzare metriche di successo'}
+3. ${enrichedData.topRisks[2] ? enrichedData.topRisks[2].suggestion : 'Definire roadmap dettagliata'}
 
-IMPORTANTE: Mantieni il formato esatto sopra, personalizzando solo i commenti basati sul verticale ${enrichedData.analysisContext?.verticals?.[0]?.title || 'identificato'}.
+Non inventare numeri diversi. Usa SOLO i punteggi calcolati sopra.
 `;
 
     // Chiama Claude API per generare lo scoring
@@ -409,13 +378,32 @@ IMPORTANTE: Mantieni il formato esatto sopra, personalizzando solo i commenti ba
 
     const data = await response.json();
     const scoringText = data.content[0].text;
+    // DEBUG: Vediamo cosa risponde Claude
+console.log("=== CLAUDE RAW RESPONSE ===");
+console.log(scoringText);
+console.log("=== END CLAUDE RESPONSE ===");
 
     // Parse della risposta di Claude
     const parsedScoring = parseScoringResponse(scoringText);
 
+    // Aggiungi i dati calcolati localmente se il parsing fallisce parzialmente
+    if (!parsedScoring.strengths || parsedScoring.strengths.length === 0) {
+      parsedScoring.strengths = enrichedData.strengths.slice(0, 5).map(s => s.text);
+    }
+    
+    if (!parsedScoring.topActions || parsedScoring.topActions.length === 0) {
+      parsedScoring.topActions = enrichedData.topRisks.slice(0, 3).map(r => r.suggestion);
+    }
+
     // Ritorna i dati strutturati
     res.status(200).json({
       scoring: parsedScoring,
+      debug: {
+        overallCalculated: enrichedData.overallScore,
+        dimensionBreakdown: Object.fromEntries(
+          Object.entries(enrichedData.dimensionScores).map(([k, v]) => [k, v.totalScore])
+        )
+      },
       rawResponse: scoringText, // Per debug se necessario
       timestamp: new Date().toISOString()
     });
@@ -466,14 +454,14 @@ function parseScoringResponse(text) {
       rating: ratingMatch ? ratingMatch[1].trim() : "Promettente"
     };
 
-    // Estrai scoring per dimensione (adattato per 5 dimensioni)
-    const dimensions = [
-      { name: "Jobs-to-be-Done", key: "jtbd" },
-      { name: "Technology Adoption", key: "tech" },
-      { name: "Business Model", key: "business" },
-      { name: "Market Strategy", key: "market" },
-      { name: "Partnership Synergies", key: "partnership" }
-    ];
+    // Estrai scoring per dimensione - NOMI CORRETTI ALLINEATI CON DEEP DIVE SECTIONS
+const dimensions = [
+  { name: "Jobs-to-be-Done & Market Trends", key: "jtbd" },
+  { name: "Competitive Positioning Canvas", key: "competitive" },
+  { name: "Technology Adoption & Validation", key: "tech" },
+  { name: "Process & Metrics", key: "process" },
+  { name: "Partnership Activation", key: "partnership" }
+];
 
     const dimensionScores = dimensions.map(dim => {
       // Cerca il pattern per ogni dimensione con formato più flessibile
@@ -489,21 +477,21 @@ function parseScoringResponse(text) {
 
     // Estrai risk assessment migliorato (nuovo formato E.2)
     const risks = [];
-    const riskRegex = /Rischio\s*(Alto|Medio|Basso):[^]*?(?:Problema|Issue):\s*([^\\n]+)[^]*?(?:Impatto):\s*([^\\n]+)[^]*?(?:Suggerimento|Mitigazione):\s*([^\\n]+)/gi;
+    const riskRegex = /Rischio\s*(Alto|Medio|Basso):[^]*?Fattore:\s*([^\\n]+)[^]*?Livello:\s*([^\\n]+)[^]*?Descrizione:\s*([^\\n]+)[^]*?Mitigazione:\s*([^\\n]+)/gi;
     let riskMatch;
     
     while ((riskMatch = riskRegex.exec(text)) !== null && risks.length < 3) {
       risks.push({
-        level: riskMatch[1].trim(),
-        factor: riskMatch[2].trim().split(':')[0] || "Area di miglioramento",
-        description: riskMatch[3].trim(),
-        mitigation: riskMatch[4].trim()
+        level: riskMatch[3].trim(),
+        factor: riskMatch[2].trim(),
+        description: riskMatch[4].trim(),
+        mitigation: riskMatch[5].trim()
       });
     }
 
     // Se non troviamo rischi nel nuovo formato, proviamo formato legacy
     if (risks.length === 0) {
-      const legacyRiskRegex = /Rischio\s*\d*[:\s]+([^\\n]+)[^]*?Livello:\s*(\w+)[^]*?Descrizione:\s*([^\\n]+)[^]*?Mitigazione:\s*([^\\n]+)/gi;
+      const legacyRiskRegex = /Rischio\s*\d*[:\s]+.*?Fattore:\s*([^\\n]+)[^]*?Livello:\s*(\w+)[^]*?Descrizione:\s*([^\\n]+)[^]*?Mitigazione:\s*([^\\n]+)/gi;
       while ((riskMatch = legacyRiskRegex.exec(text)) !== null && risks.length < 3) {
         risks.push({
           factor: riskMatch[1].trim(),
