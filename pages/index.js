@@ -38,12 +38,17 @@ export default function InnovationExpertAI() {
   const [showSaveDialog, setShowSaveDialog] = useState(false);
   const [conversationTitle, setConversationTitle] = useState('');
   const [notionConnected, setNotionConnected] = useState(true);
-  
+
   const messagesEndRef = useRef(null);
   const [showValidation, setShowValidation] = useState(false);
 const [currentAnalysisId, setCurrentAnalysisId] = useState(null);
 const [validationAnswers, setValidationAnswers] = useState({});
 const [scoringData, setScoringData] = useState(null);
+// E.3: Re-submission flow states
+const [scoringHistory, setScoringHistory] = useState([]);
+const [isEditingAnswers, setIsEditingAnswers] = useState(false);
+const [submissionCount, setSubmissionCount] = useState(0);
+const [previousScore, setPreviousScore] = useState(null);
   const [currentStep, setCurrentStep] = useState(1);
   const [stepHistory, setStepHistory] = useState([1]);
   const [deepDiveMode, setDeepDiveMode] = useState(null);
@@ -954,6 +959,30 @@ console.log('🎯 RESULT DAL BACKEND:', {
                         ))}
                       </div>
                     </div>
+
+                    {/* E.3: Re-submission button */}
+                    {submissionCount < 3 && (
+                      <div className="mt-6 border-t border-gray-200 pt-6">
+                        <div className="flex justify-center items-center gap-4">
+                          <button
+                            onClick={() => {
+                              setIsEditingAnswers(true);
+                              setPreviousScore(message.scoringData.overall.score);
+                              setCurrentStep(3);
+                            }}
+                            className="px-6 py-3 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg font-medium hover:from-green-600 hover:to-green-700 transition-all flex items-center gap-2"
+                          >
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                            </svg>
+                            Migliora le tue risposte
+                          </button>
+                          <div className="text-sm text-gray-600">
+                            Iterazione {submissionCount + 1} di 3
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
 
