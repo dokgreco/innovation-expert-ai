@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import AnalysisDisplay from '../components/StructuredAnalysisDisplay';
 import ValidationQuestions from '../components/ValidationQuestions';
+import { measurePerformance } from '../lib/performance/measure';
 
 // Progress steps configuration
 const steps = [
@@ -230,6 +231,7 @@ const handleSectionQuestion = async (section, question) => {
     if (e) e.preventDefault();
     const currentInput = customPrompt || input.trim();
     if (!currentInput) return;
+    measurePerformance.startMeasure('totalFlow');
 
     const userMessage = { 
       id: Date.now().toString(),
@@ -254,6 +256,7 @@ if (!stepHistory.includes(2)) {
 
     try {
       console.log('🚀 Invio query a Notion API:', currentInput);
+      measurePerformance.startMeasure('notionQuery');
       
       // Step 1: Query Notion databases
       const notionResponse = await fetch('/api/notion-query', {
@@ -265,6 +268,7 @@ if (!stepHistory.includes(2)) {
         })
       });
       
+      measurePerformance.endMeasure('notionQuery');
       if (!notionResponse.ok) {
         throw new Error(`Notion API error: ${notionResponse.status}`);
       }
@@ -274,6 +278,7 @@ if (!stepHistory.includes(2)) {
       
       setIsAnalyzing(false);
       setIsLoading(true);
+measurePerformance.startMeasure('claudeAnalysis');
 
       // Step 2: Send to Claude AI with Notion context
       console.log('🧠 Invio dati a Claude API...');
@@ -294,6 +299,7 @@ if (!stepHistory.includes(2)) {
         })
       });
 
+      measurePerformance.endMeasure('claudeAnalysis');
       if (!claudeResponse.ok) {
         const errorText = await claudeResponse.text();
         throw new Error(`Claude API error: ${claudeResponse.status} - ${errorText}`);
@@ -346,6 +352,8 @@ console.log('🎯 RESULT DAL BACKEND:', {
     } finally {
       setIsLoading(false);
       setIsAnalyzing(false);
+      measurePerformance.endMeasure('totalFlow');
+      console.log('📊 PERFORMANCE REPORT:', measurePerformance.getReport());
     }
   };
 
