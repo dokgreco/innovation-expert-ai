@@ -3,7 +3,6 @@
 // Questo causa il ritorno di dati random/cached invece della query specifica
 
 import { Client } from '@notionhq/client';
-import { setSecureCache, getSecureCache, hasValidCache } from '../../utils/secureCache';
 
 const notion = new Client({
   auth: process.env.NOTION_TOKEN,
@@ -15,6 +14,41 @@ const databases = [
   process.env.NOTION_DATABASE_3
 ];
 
+// ============= PERFORMANCE CACHE SYSTEM =============
+const queryCache = new Map();
+const CACHE_TTL = 5 * 60 * 1000; // 5 minuti di cache
+
+// Funzione helper per generare cache key
+function getCacheKey(query, filters) {
+  // Log dettagliato degli input
+  console.log('🔍 getCacheKey inputs:', { 
+    query: query, 
+    filters: JSON.stringify(filters),
+    typeOfQuery: typeof query,
+    typeOfFilters: typeof filters 
+  });
+
+  const normalizedQuery = (query || '').toLowerCase().trim();
+  const filterKey = JSON.stringify(filters || {});
+  const key = `notion_${normalizedQuery}_${filterKey}`;
+
+  // Log della chiave generata
+  console.log('🔑 Generated key:', key);
+
+  return key;
+}
+
+// Funzione per pulire cache vecchia
+function cleanExpiredCache() {
+  const now = Date.now();
+  for (const [key, value] of queryCache.entries()) {
+    if (now - value.timestamp > CACHE_TTL) {
+      queryCache.delete(key);
+      console.log(`🗑️ Cache expired for: ${key}`);
+    }
+  }
+}
+// ============= END CACHE SYSTEM =============
 // TASK 6: Test suite automatizzato - COMPLETO
 const testQueries = [
   "E-learning platform for kids",
@@ -55,165 +89,163 @@ export default async function handler(req, res) {
 
   try {
     const { query, filters } = req.body;
-    // 🔒 SECURE CACHE IMPLEMENTATION
-    const cacheKey = `query_${query.toLowerCase().replace(/\s+/g, '_').substring(0, 50)}`;
+    const startTime = Date.now();
     
-    // Check secure cache first
-    console.log(`🔍 [DEBUG] Looking for cache with key: ${cacheKey}`);
-    const cachedIds = getSecureCache(cacheKey);
-    if (cachedIds && cachedIds.length > 0) {
-      console.log(`✅ [SecureCache] Cache hit for: ${query}`);
-      console.log(`📊 [SecureCache] Returning ${cachedIds.length} cached IDs`);
-      
-      // Return only IDs, no sensitive data
-      return res.status(200).json({
-        methodology: {
-          step1_verticals: { top3: [], framework: {} },
-          step2_cases: { top5: [], convergence: {} },
-          step3_insights: { technologies: [], businessModels: [], strategies: [] }
-        },
-        metadata: {
-          fromCache: true,
-          cachedIds: cachedIds,
-          totalScanned: cachedIds.length,
-          processingTime: '0ms (cached)',
-          timestamp: new Date().toISOString()
-        }
-      });
-    }
-    
-    console.log(`❌ [SecureCache] Cache miss for: ${query}`);
-    const startTime = Date.now(); // Per calcolare il processing time
-    
-    // 🚨 DEBUG: Log della query ricevuta
     console.log('🔍 Query ricevuta:', query);
     console.log('📋 Filtri ricevuti:', filters);
+    
+    // === CHECK CACHE FIRST ===
+    cleanExpiredCache(); // Pulisci cache vecchia
+    const cacheKey = getCacheKey(query, filters);
+    console.log(`🔑 Cache key generated: ${cacheKey}`);
+console.log(`📦 Cache size: ${queryCache.size}`);
+    if (queryCache.has(cacheKey)) {
+  const cached = queryCache.get(cacheKey);
+
+  // Log dettagliato della cache
+  console.log('📦 Cache check:', {
+    cacheKey: cacheKey,
+    hasCachedResult: !!cached,
+    cacheSize: queryCache.size,
+    allKeys: Array.from(queryCache.keys())
+  });
+
+  console.log(`⚡ CACHE HIT! Saved ${Date.now() - startTime}ms`);
+  return res.status(200).json({
+    ...cached.data,
+    metadata: {
+      ...cached.data.metadata,
+      fromCache: true,
+      cacheAge: Date.now() - cached.timestamp
+    }
+  });
+}
+    console.log('📊 CACHE MISS - Processing query...');
+    // === END CACHE CHECK ===
     
     let allResults = [];
     let totalResults = 0;
 
     // 🔧 TASK 2.1: Tracking statistiche per database
-const dbStats = {
-  [databases[0]]: { maxScore: 0, count: 0, results: [] },
-  [databases[1]]: { maxScore: 0, count: 0, results: [] },
-  [databases[2]]: { maxScore: 0, count: 0, results: [] }
-};
-    // Query each database
+    const dbStats = {
+      [databases[0]]: { maxScore: 0, count: 0, results: [] },
+      [databases[1]]: { maxScore: 0, count: 0, results: [] },
+      [databases[2]]: { maxScore: 0, count: 0, results: [] }
+    };
+    
     // 🔧 TASK 1.3: Estrai keywords per i filtri
-const keywords = extractKeyTokens(query);
-console.log('🔍 Keywords estratte per filtri:', keywords);
+    const keywords = extractKeyTokens(query);
+    console.log('🔍 Keywords estratte per filtri:', keywords);
 
-// Query each database
+    // Query each database
     for (const dbId of databases) {
       if (!dbId) continue;
       
       try {
         // 🔍 DEBUG DB2
-    if (dbId === databases[1]) {
-      console.log('🔍 DEBUG DB2 - Database ID:', dbId);
-    }
+        if (dbId === databases[1]) {
+          console.log('🔍 DEBUG DB2 - Database ID:', dbId);
+        }
 
         // 🔧 FIX 1: Aggiungere filtro di ricerca basato sulla query
-const searchFilter = buildNotionFilter(dbId, query, keywords);
+        const searchFilter = buildNotionFilter(dbId, query, keywords);
 
-// Log per debug
-if (searchFilter) {
-  console.log(`📋 DB${databases.indexOf(dbId) + 1}: Query CON filtri applicati`);
-} else {
-  console.log(`📋 DB${databases.indexOf(dbId) + 1}: Query SENZA filtri (fallback)`);
-}
+        // Log per debug
+        if (searchFilter) {
+          console.log(`📋 DB${databases.indexOf(dbId) + 1}: Query CON filtri applicati`);
+        } else {
+          console.log(`📋 DB${databases.indexOf(dbId) + 1}: Query SENZA filtri (fallback)`);
+        }
 
-// 🔧 FIX 2: Usare il filtro nella query
-const dbResponse = await notion.databases.query({
-  database_id: dbId,
-  page_size: 20, // Ridotto per performance
-  filter: searchFilter, // 🆕 SEMPLIFICATO - passa direttamente searchFilter
-          sorts: [
-            {
-              timestamp: 'last_edited_time',
-              direction: 'descending'
-            }
-          ]
+        // 🔧 FIX 2: Usare il filtro nella query
+        const dbResponse = await notion.databases.query({
+          database_id: dbId,
+          filter: searchFilter,
+          page_size: 50, // AUMENTATO da default 20 a 50 per più candidati
+          sorts: [{ timestamp: 'last_edited_time', direction: 'descending' }]
         });
 
         // 🔍 DEBUG: Log risultati per database
-    console.log(`📊 Database ${databases.indexOf(dbId) + 1}: ${dbResponse.results.length} pages trovate`);
-    
-    // Se è DB2, mostra i primi 3 titoli
-    if (dbId === databases[1] && dbResponse.results.length > 0) {
-      console.log('🔍 DB2 Sample titles:');
-      dbResponse.results.slice(0, 3).forEach((page, idx) => {
-        const title = getPageTitle(page);
-        console.log(`  ${idx + 1}. ${title}`);
-      });
-    }
+        console.log(`📊 Database ${databases.indexOf(dbId) + 1}: ${dbResponse.results.length} pages trovate`);
+        
+        // Se è DB2, mostra i primi 3 titoli
+        if (dbId === databases[1] && dbResponse.results.length > 0) {
+          console.log('🔍 DB2 Sample titles:');
+          dbResponse.results.slice(0, 3).forEach((page, idx) => {
+            const title = getPageTitle(page);
+            console.log(`  ${idx + 1}. ${title}`);
+          });
+        }
 
         console.log(`📊 Database ${dbId}: ${dbResponse.results.length} risultati trovati`);
-// 🔍 DEBUG: Struttura database
-if (dbResponse.results.length > 0) {
-  console.log('📋 Prima pagina trovata:', dbResponse.results[0].id);
-  console.log('🏷️ Properties disponibili:', Object.keys(dbResponse.results[0].properties));
-}
+        
+        // 🔍 DEBUG: Struttura database
+        if (dbResponse.results.length > 0) {
+          console.log('📋 Prima pagina trovata:', dbResponse.results[0].id);
+          console.log('🏷️ Properties disponibili:', Object.keys(dbResponse.results[0].properties));
+        }
+        
         // Get content of each page
-for (const page of dbResponse.results.slice(0, 5)) { // Limitato a 5 per performance
-  // 🔍 DEBUG DB2 Content
-  if (dbId === databases[1]) {
-    const title = getPageTitle(page);
-    console.log(`🔍 DB2 Processing: "${title}"`);
-  }
-  
-  try {
-    const pageContent = await notion.blocks.children.list({
-      block_id: page.id,
-      page_size: 20 // Limitato per evitare payload troppo grandi
-    });
+        for (const page of dbResponse.results.slice(0, 10)) { // AUMENTATO a 10 per più candidati
+          // 🔍 DEBUG DB2 Content
+          if (dbId === databases[1]) {
+            const title = getPageTitle(page);
+            console.log(`🔍 DB2 Processing: "${title}"`);
+          }
+          
+          try {
+            const pageContent = await notion.blocks.children.list({
+              block_id: page.id,
+              page_size: 20
+            });
+            
             const content = pageContent.results
               .filter(block => 
-  block.type === 'paragraph' && 
-  block.paragraph.rich_text.length > 0
-)
+                block.type === 'paragraph' && 
+                block.paragraph.rich_text.length > 0
+              )
               .map(block => block.paragraph.rich_text.map(text => text.plain_text).join(''))
               .join(' ')
-              .substring(0, 200); // Limitato per payload
+              .substring(0, 200);
 
             // 🔧 FIX 4: Solo aggiungere se c'è contenuto rilevante
-const allProperties = extractAllProperties(page);
-const relevanceScore = calculateRelevance(content, query, allProperties);
+            const allProperties = extractAllProperties(page);
+            const relevanceScore = calculateRelevance(content, query, allProperties);
 
-// 🔍 DEBUG: Log per capire perché DB2 non passa
-if (dbId === databases[1]) {
-  console.log(`🔍 DB2 Check - Title: "${getPageTitle(page)}", Content length: ${content.length}, Score: ${relevanceScore.toFixed(2)}`);
-}
+            // 🔍 DEBUG: Log per capire perché DB2 non passa
+            if (dbId === databases[1]) {
+              console.log(`🔍 DB2 Check - Title: "${getPageTitle(page)}", Content length: ${content.length}, Score: ${relevanceScore.toFixed(2)}`);
+            }
 
-// MODIFICATO: Accetta anche se ha properties ricche, non solo content
-if (content.length > 10 || relevanceScore > 5 || Object.keys(allProperties).length > 10) {
-  // 🔧 Prima salva il raw score per trovare il max
-const rawScore = relevanceScore;
+            // MODIFICATO: Accetta anche se ha properties ricche, non solo content
+            if (content.length > 10 || relevanceScore > 5 || Object.keys(allProperties).length > 10) {
+              // 🔧 Prima salva il raw score per trovare il max
+              const rawScore = relevanceScore;
 
-// Aggiorna il max score per questo database
-if (rawScore > dbStats[dbId].maxScore) {
-  dbStats[dbId].maxScore = rawScore;
-}
+              // Aggiorna il max score per questo database
+              if (rawScore > dbStats[dbId].maxScore) {
+                dbStats[dbId].maxScore = rawScore;
+              }
 
-// Salva temporaneamente con raw score
-allResults.push({
-  id: page.id,
-  title: getPageTitle(page),
-  content: content,
-  properties: allProperties,
-  database: dbId,
-  relevanceScore: rawScore, // Temporaneo
-  rawScore: rawScore // Salva anche il raw per dopo
-});
+              // Salva temporaneamente con raw score
+              allResults.push({
+                id: page.id,
+                title: getPageTitle(page),
+                content: content,
+                properties: allProperties,
+                database: dbId,
+                relevanceScore: rawScore,
+                rawScore: rawScore
+              });
 
-dbStats[dbId].count++;
+              dbStats[dbId].count++;
 
-  // 🔍 DEBUG: Log properties estratte
-  if (allResults.length === 1) { // Solo per il primo risultato
-    console.log('🏗️ ESEMPIO Properties estratte:', allResults[0].properties);
-    console.log('📊 Numero properties:', Object.keys(allResults[0].properties).length);
-  }
-}
+              // 🔍 DEBUG: Log properties estratte
+              if (allResults.length === 1) {
+                console.log('🏗️ ESEMPIO Properties estratte:', allResults[0].properties);
+                console.log('📊 Numero properties:', Object.keys(allResults[0].properties).length);
+              }
+            }
           } catch (pageError) {
             console.error('❌ Error fetching page content:', pageError);
           }
@@ -485,39 +517,73 @@ allResults.forEach((r, idx) => {
   console.log(`  💯 Score: ${r.relevanceScore || r.score || 'NO SCORE'}`);
 });
 console.log('=== END SCORING BREAKDOWN ===\n');
-console.log(`🔍 [DEBUG] Preparing to save cache with key: ${cacheKey}`);
-    console.log(`🔍 [DEBUG] Results to cache: ${allResults.length} total, saving first 10`);
-// 🔒 SAVE TO SECURE CACHE (IDs only)
-    const resultIds = allResults.slice(0, 10).map(r => r.id);
-    if (resultIds.length > 0) {
-      setSecureCache(cacheKey, resultIds);
-      console.log(`💾 [SecureCache] Saved ${resultIds.length} IDs to cache`);
-    }    
-// Structured response secondo metodologia proprietaria
-    res.status(200).json({
-      methodology: {
-        step1_verticals: {
-          top3: verticalResults,
-          framework: extractFramework(verticalResults)
-        },
-        step2_cases: {
-          top5: caseResults,
-          convergence: convergencePatterns
-        },
-        step3_insights: {
-          technologies: convergencePatterns.technologies,
-          businessModels: convergencePatterns.businessModels,
-          strategies: convergencePatterns.strategies
-        }
+// === SAVE TO CACHE ===
+try {
+  console.log(`💾 Saving to cache with key: ${cacheKey}`);
+  const cacheData = {
+    methodology: {
+      step1_verticals: {
+        top3: verticalResults,
+        framework: extractFramework(verticalResults)
       },
-      metadata: {
-        totalScanned: totalResults,
-        processingTime: `${Date.now() - startTime}ms`, // Aggiungeremo startTime dopo
-        confidenceScore: calculateConfidenceScore(verticalResults, caseResults),
-        queryProcessed: query,
-        timestamp: new Date().toISOString()
+      step2_cases: {
+        top5: caseResults,
+        convergence: convergencePatterns
+      },
+      step3_insights: {
+        technologies: convergencePatterns.technologies,
+        businessModels: convergencePatterns.businessModels,
+        strategies: convergencePatterns.strategies
       }
-    });
+    },
+    metadata: {
+      totalScanned: totalResults,
+      processingTime: `${Date.now() - startTime}ms`,
+      confidenceScore: calculateConfidenceScore(verticalResults, caseResults),
+      queryProcessed: query,
+      timestamp: new Date().toISOString()
+    }
+  };
+  
+  queryCache.set(cacheKey, {
+    data: cacheData,
+    timestamp: Date.now()
+  });
+  
+  console.log(`✅ Cache saved! New cache size: ${queryCache.size}`);
+  console.log(`📝 Cache keys: ${Array.from(queryCache.keys()).join(', ')}`);
+  
+  // RETURN con gli stessi dati
+  return res.status(200).json(cacheData);
+  
+} catch (cacheError) {
+  console.error('❌ Cache save error:', cacheError);
+  // Continua anche se cache fallisce
+  return res.status(200).json({
+    methodology: {
+      step1_verticals: {
+        top3: verticalResults,
+        framework: extractFramework(verticalResults)
+      },
+      step2_cases: {
+        top5: caseResults,
+        convergence: convergencePatterns
+      },
+      step3_insights: {
+        technologies: convergencePatterns.technologies,
+        businessModels: convergencePatterns.businessModels,
+        strategies: convergencePatterns.strategies
+      }
+    },
+    metadata: {
+      totalScanned: totalResults,
+      processingTime: `${Date.now() - startTime}ms`,
+      confidenceScore: calculateConfidenceScore(verticalResults, caseResults),
+      queryProcessed: query,
+      timestamp: new Date().toISOString()
+    }
+  });
+}
 
   } catch (error) {
     console.error('Notion API Error:', error);
