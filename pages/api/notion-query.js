@@ -55,6 +55,7 @@ export default async function handler(req, res) {
 
   try {
     const { query, filters } = req.body;
+    const startTime = Date.now(); // Sposta qui, PRIMA del cache check
     // 🔒 SECURE CACHE IMPLEMENTATION
     const cacheKey = `query_${query.toLowerCase().replace(/\s+/g, '_').substring(0, 50)}`;
     
@@ -63,28 +64,46 @@ export default async function handler(req, res) {
     const cachedIds = getSecureCache(cacheKey);
     if (cachedIds && cachedIds.length > 0) {
       console.log(`✅ [SecureCache] Cache hit for: ${query}`);
-      console.log(`📊 [SecureCache] Returning ${cachedIds.length} cached IDs`);
+      console.log(`📊 [SecureCache] Fetching ${cachedIds.length} cached records`);
       
-      // Return only IDs, no sensitive data
+      // PHASE 1: Fetch full data using cached IDs
+      const cachedResults = await fetchRecordsByIds(cachedIds);
+      
+      // Process for methodology
+      const verticalResults = cachedResults.slice(0, 1);
+      const caseResults = cachedResults.slice(1, 5);
+      const convergencePatterns = analyzeConvergencePatterns(caseResults);
+      
+      // Return full response with cached data
       return res.status(200).json({
         methodology: {
-          step1_verticals: { top3: [], framework: {} },
-          step2_cases: { top5: [], convergence: {} },
-          step3_insights: { technologies: [], businessModels: [], strategies: [] }
+          step1_verticals: {
+            top3: verticalResults,
+            framework: extractFramework(verticalResults)
+          },
+          step2_cases: {
+            top5: caseResults,
+            convergence: convergencePatterns
+          },
+          step3_insights: {
+            technologies: convergencePatterns.technologies,
+            businessModels: convergencePatterns.businessModels,
+            strategies: convergencePatterns.strategies
+          }
         },
         metadata: {
           fromCache: true,
-          cachedIds: cachedIds,
-          totalScanned: cachedIds.length,
-          processingTime: '0ms (cached)',
+          totalScanned: cachedResults.length,
+          processingTime: `${Date.now() - startTime}ms (cached)`,
+          confidenceScore: calculateConfidenceScore(verticalResults, caseResults),
+          queryProcessed: query,
           timestamp: new Date().toISOString()
         }
       });
     }
     
     console.log(`❌ [SecureCache] Cache miss for: ${query}`);
-    const startTime = Date.now(); // Per calcolare il processing time
-    
+        
     // 🚨 DEBUG: Log della query ricevuta
     console.log('🔍 Query ricevuta:', query);
     console.log('📋 Filtri ricevuti:', filters);
@@ -962,6 +981,53 @@ function buildNotionFilter(dbId, query, keywords) {
   };
   
   return filterMap[dbId];
+}
+// 🚀 PHASE 1: Fetch specific records by IDs for cache optimization
+async function fetchRecordsByIds(ids) {
+  console.log(`🎯 [Phase1] Fetching ${ids.length} specific records by ID`);
+  const startFetch = Date.now();
+  const results = [];
+  
+  for (const id of ids) {
+    try {
+      // Fetch page data
+      const page = await notion.pages.retrieve({ page_id: id });
+      
+      // Get content (limited for performance)
+      const pageContent = await notion.blocks.children.list({
+        block_id: id,
+        page_size: 10
+      });
+      
+      const content = pageContent.results
+        .filter(block => 
+          block.type === 'paragraph' && 
+          block.paragraph.rich_text.length > 0
+        )
+        .map(block => block.paragraph.rich_text.map(text => text.plain_text).join(''))
+        .join(' ')
+        .substring(0, 200);
+      
+      // Extract properties
+      const properties = extractAllProperties(page);
+      
+      results.push({
+        id: page.id,
+        title: getPageTitle(page),
+        content: content,
+        properties: properties,
+        database: page.parent.database_id,
+        fromCache: true
+      });
+      
+      console.log(`✅ Fetched: ${getPageTitle(page)}`);
+    } catch (error) {
+      console.error(`❌ Error fetching ID ${id}:`, error.message);
+    }
+  }
+  
+  console.log(`⏱️ [Phase1] Fetched ${results.length}/${ids.length} records in ${Date.now() - startFetch}ms`);
+  return results;
 }
 function getPageTitle(page) {
   // 🔧 FIX: Migliore estrazione del titolo
