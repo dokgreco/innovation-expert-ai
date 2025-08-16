@@ -2,7 +2,7 @@
 // Prevents sensitive data exposure - stores only IDs
 
 const CACHE_PREFIX = 'notion_cache_';
-const CACHE_EXPIRY = 5 * 60 * 1000; // 5 minutes
+const CACHE_EXPIRY = 30 * 60 * 1000; // 30 minutes - Phase 3 optimization
 
 // Use global to persist cache across hot reloads in dev
 // In production, this will work normally

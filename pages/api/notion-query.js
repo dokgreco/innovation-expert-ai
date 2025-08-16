@@ -8,6 +8,8 @@ import { setSecureCache, getSecureCache, hasValidCache } from '../../utils/secur
 const notion = new Client({
   auth: process.env.NOTION_TOKEN,
 });
+// Costanti di configurazione per ottimizzazione context
+const MAX_CONTENT_LENGTH = 150; // Ridotto da 200 a 150 per Phase 3
 
 const databases = [
   process.env.NOTION_DATABASE_1,
@@ -193,7 +195,8 @@ for (const page of dbResponse.results.slice(0, 5)) { // Limitato a 5 per perform
 )
               .map(block => block.paragraph.rich_text.map(text => text.plain_text).join(''))
               .join(' ')
-              .substring(0, 200); // Limitato per payload
+              .substring(0, MAX_CONTENT_LENGTH)
+.replace(/\s+\S*$/, '...'); // Smart truncation - taglia all'ultima parola completa
 
             // 🔧 FIX 4: Solo aggiungere se c'è contenuto rilevante
 const allProperties = extractAllProperties(page);
@@ -875,6 +878,11 @@ function extractRelevantBestPractices(results, query) {
 function extractAllProperties(page) {
   const properties = {};
   
+  // NUOVO: Limiti per ottimizzazione context Phase 3
+  const MAX_PROPERTIES = 10;
+  const MAX_PROPERTY_LENGTH = 500;
+  let propertyCount = 0;
+  
   // Lista delle properties prioritarie da cercare
   const priorityFields = [
     'JTDs', 'Jobs to be Done', 'Jobs-to-be-Done',
@@ -890,59 +898,73 @@ function extractAllProperties(page) {
     'Classification', 'Classificazione', 'Category'
   ];
   
+  // Prima ordina le properties per priorità
+  const sortedEntries = Object.entries(page.properties).sort(([keyA], [keyB]) => {
+    const isPriorityA = priorityFields.some(field => keyA.toLowerCase().includes(field.toLowerCase()));
+    const isPriorityB = priorityFields.some(field => keyB.toLowerCase().includes(field.toLowerCase()));
+    if (isPriorityA && !isPriorityB) return -1;
+    if (!isPriorityA && isPriorityB) return 1;
+    return 0;
+  });
+  
   // Estrai ogni property
-  Object.entries(page.properties).forEach(([key, value]) => {
+  sortedEntries.forEach(([key, value]) => {
+    // Limita numero di properties
+    if (propertyCount >= MAX_PROPERTIES) return;
+    
     try {
+      let extractedValue = null;
+      
       switch(value.type) {
         case 'title':
           if (value.title && value.title.length > 0) {
-            properties[key] = value.title.map(t => t.plain_text).join('');
+            extractedValue = value.title.map(t => t.plain_text).join('');
           }
           break;
           
         case 'rich_text':
           if (value.rich_text && value.rich_text.length > 0) {
-            properties[key] = value.rich_text.map(t => t.plain_text).join('');
+            extractedValue = value.rich_text.map(t => t.plain_text).join('');
           }
           break;
           
         case 'select':
           if (value.select) {
-            properties[key] = value.select.name;
+            extractedValue = value.select.name;
           }
           break;
           
         case 'multi_select':
           if (value.multi_select && value.multi_select.length > 0) {
-            properties[key] = value.multi_select.map(s => s.name).join(', ');
+            extractedValue = value.multi_select.map(s => s.name).join(', ');
           }
           break;
           
         case 'number':
           if (value.number !== null) {
-            properties[key] = value.number;
+            extractedValue = value.number;
           }
           break;
           
         case 'checkbox':
-          properties[key] = value.checkbox || false;
+          extractedValue = value.checkbox || false;
           break;
           
         case 'url':
           if (value.url) {
-            properties[key] = value.url;
+            extractedValue = value.url;
           }
           break;
           
         case 'date':
           if (value.date) {
-            properties[key] = value.date.start;
+            extractedValue = value.date.start;
           }
           break;
           
         case 'formula':
           if (value.formula) {
-            properties[key] = value.formula.string || value.formula.number;
+            extractedValue = value.formula.string || value.formula.number;
           }
           break;
           
@@ -950,6 +972,18 @@ function extractAllProperties(page) {
           // Log per vedere se ci sono altri tipi
           console.log(`📝 Tipo property non gestito: ${value.type}`);
       }
+      
+      // Limita lunghezza del valore se è una stringa
+      if (extractedValue && typeof extractedValue === 'string' && extractedValue.length > MAX_PROPERTY_LENGTH) {
+        extractedValue = extractedValue.substring(0, MAX_PROPERTY_LENGTH).replace(/\s+\S*$/, '...');
+      }
+      
+      // Solo se ha valore, incrementa il counter e assegna
+      if (extractedValue !== null && extractedValue !== '') {
+        propertyCount++;
+        properties[key] = extractedValue;
+      }
+      
     } catch (err) {
       console.error(`❌ Errore estrazione property ${key}:`, err);
     }
@@ -960,7 +994,7 @@ function extractAllProperties(page) {
     Object.keys(properties).some(key => key.toLowerCase().includes(field.toLowerCase()))
   );
   
-  console.log(`✅ Properties estratte: ${Object.keys(properties).length}`);
+  console.log(`✅ Properties estratte: ${Object.keys(properties).length} (max ${MAX_PROPERTIES})`);
   console.log(`🎯 Priority fields trovati: ${foundPriorityFields.join(', ')}`);
   
   return properties;
