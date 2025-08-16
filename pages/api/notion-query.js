@@ -197,7 +197,21 @@ for (const page of dbResponse.results.slice(0, 5)) { // Limitato a 5 per perform
 
             // 🔧 FIX 4: Solo aggiungere se c'è contenuto rilevante
 const allProperties = extractAllProperties(page);
+// Debug: verifica nuovo scoring
+console.log('📍 Calling calculateRelevance with:', {
+  hasContent: !!content,
+  contentLength: content ? content.length : 0,
+  query: query,
+  hasProperties: !!allProperties,
+  propertiesCount: Object.keys(allProperties || {}).length
+});
+
 const relevanceScore = calculateRelevance(content, query, allProperties);
+
+console.log('✅ Relevance result:', {
+  score: relevanceScore.toFixed(3),
+  percentage: (relevanceScore * 100).toFixed(1) + '%'
+});
 
 // 🔍 DEBUG: Log per capire perché DB2 non passa
 if (dbId === databases[1]) {
@@ -266,7 +280,16 @@ Object.entries(dbStats).forEach(([db, stats], idx) => {
 
 // Applica normalizzazione a tutti i risultati
 allResults = allResults.map(result => {
-  const dbMaxScore = dbStats[result.database].maxScore || 100;
+  // Usa un minimo threshold per evitare over-normalizzazione
+// Se il maxScore del DB è troppo basso, usa un minimo di 0.5 per evitare inflazione
+const rawDbMaxScore = dbStats[result.database].maxScore || 0.5;
+const dbMaxScore = Math.max(rawDbMaxScore, 0.5); // Minimo 0.5 per evitare over-boost
+
+// Log per debug quando c'è differenza
+if (rawDbMaxScore < 0.5 && process.env.NODE_ENV === 'development') {
+  console.log(`⚠️ DB MaxScore adjustment: ${rawDbMaxScore.toFixed(3)} → ${dbMaxScore} for ${result.title}`);
+}
+
   const finalScore = calculateFinalScore(
     result.rawScore,
     result.content,
@@ -305,10 +328,12 @@ function applyAdaptiveAcceptance(results) {
   const allScores = results.map(r => r.finalScore || r.relevanceScore || 0);
   
   // Calcola il 70° percentile (accetta solo top 30%)
-  const cutoff = percentile(allScores, 70);
+  // Usa 60° percentile per essere meno restrittivi
+const cutoff = percentile(allScores, 60);
   
   // Imposta un minimo di sicurezza per evitare di escludere tutto
-  const minAcceptable = 35;
+  // Abbassa il minimo per accettare risultati con score più bassi ma rilevanti
+const minAcceptable = 25;
   
   // Filtra risultati che superano la soglia adattiva
   const accepted = results.filter(r => {
@@ -573,97 +598,124 @@ console.log(`🔍 [DEBUG] Preparing to save cache with key: ${cacheKey}`);
 // 🔧 FUNZIONE MIGLIORATA: Calcola rilevanza con scoring avanzato
 function calculateRelevance(content, query, properties = {}) {
   if (!query) return 0;
-// Rimosso il check su content perché gestiremo i casi vuoti più avanti
+    console.log('🎯 NEW SCORING v2 ACTIVE');
+
+  // Nuovo scoring algorithm con 3 componenti
+  const scores = {
+    crossDomain: 0,    // 30% weight
+    semantic: 0,       // 60% weight  
+    popularity: 0      // 10% weight
+  };
+
+  // Normalizza query e content per matching
+  const normalizedQuery = query.toLowerCase().trim();
+  const normalizedContent = (content || '').toLowerCase();
   
-  // Normalizza query e content
-  const queryLower = query.toLowerCase();
-  const contentLower = content.toLowerCase();
-  const queryWords = queryLower.split(/\s+/).filter(w => w.length > 2);
+  // 1. CROSS-DOMAIN SCORING (30%)
+  // Conta quanti domini/settori sono menzionati
+  const domains = [
+    'fintech', 'healthtech', 'edtech', 'agritech', 'proptech',
+    'insurtech', 'legaltech', 'hrtech', 'martech', 'retailtech',
+    'ai', 'machine learning', 'blockchain', 'iot', 'cybersecurity',
+    'saas', 'marketplace', 'platform', 'b2b', 'b2c'
+  ];
   
-  let score = 0;
-  
-  // 1. EXACT MATCH BONUS (peso 3x)
-  if (contentLower.includes(queryLower)) {
-    score += queryWords.length * 3;
-  }
-  
-  // 2. WORD MATCH (peso 1x per ogni match)
-  queryWords.forEach(word => {
-    const regex = new RegExp(`\\b${word}`, 'gi');
-    const matches = (contentLower.match(regex) || []).length;
-    score += matches;
+  let domainMatches = 0;
+  domains.forEach(domain => {
+    if (normalizedContent.includes(domain)) {
+      domainMatches++;
+    }
   });
   
-  // 3. PROPERTY MATCH BONUS (peso 2x)
-  if (properties) {
-    const propertyText = Object.values(properties)
-      .filter(val => typeof val === 'string')
-      .join(' ')
-      .toLowerCase();
-    
-    queryWords.forEach(word => {
-      if (propertyText.includes(word)) {
-        score += 2;
-      }
-    });
-    
-    // 4. PRIORITY FIELDS BONUS
-    const priorityFields = ['JTDs', 'Business Model', 'Value Proposition', 'Technologies'];
-    priorityFields.forEach(field => {
-      if (properties[field] && typeof properties[field] === 'string') {
-        const fieldValue = properties[field].toLowerCase();
-        queryWords.forEach(word => {
-          if (fieldValue.includes(word)) {
-            score += 3; // Bonus extra per campi prioritari
-          }
-        });
-      }
-    });
+  // Normalizza: 1 domain = 0.3, 2 domains = 0.6, 3+ domains = 1.0
+  scores.crossDomain = Math.min(domainMatches * 0.33, 1.0);
+  
+  // 2. SEMANTIC MATCHING (60%)
+  // Migliorato per gestire query multi-parola
+  const queryWords = normalizedQuery.split(/\s+/).filter(w => w.length > 2);
+  let semanticPoints = 0;
+  
+  // Exact phrase match (bonus maggiore)
+  if (normalizedContent.includes(normalizedQuery)) {
+    semanticPoints += 0.8;  // Aumentato da 0.5
   }
   
-  // 🆕 SPECIAL CASE: Se non c'è content, usa properties per matching
-  if (!content || content.length < 10) {
-        
-    // Cerca in TUTTE le properties che potrebbero contenere descrizioni
-    const descriptionFields = [
-      'Description', 'Description (ENG)', 'Descrizione',
-      'Value Proposition', 'Value Proposition (ENG)',
-      'JTDs', 'Impact', 'Impact (ENG)',
-      'Technologies', 'Technologies (ENG)'
-    ];
-     
-    let combinedText = '';
-    descriptionFields.forEach(field => {
-      if (properties[field]) {
-        combinedText += ' ' + properties[field];
-      }
-    });
-    
-    combinedText = combinedText.toLowerCase();
-    
-    // Aumenta significativamente lo score per match senza content
-    queryWords.forEach(word => {
-      if (combinedText.includes(word)) {
-        score += 2; // 🔧 TASK 2.3: Ridotto da 10 a 2 per bilanciare scoring
-      }
-    });
-    
-    // DEBUG generico (funziona per tutti)
-    if (score > 0) {
-      console.log(`📊 No-content match: "${query.substring(0, 30)}..." → Score: ${score}`);
+  // Individual word matches con peso proporzionale
+  let matchedWords = 0;
+  queryWords.forEach(word => {
+    if (normalizedContent.includes(word)) {
+      matchedWords++;
     }
+  });
+  
+  // Calcola percentuale di parole matchate
+  if (queryWords.length > 0) {
+    const matchRatio = matchedWords / queryWords.length;
+    semanticPoints += matchRatio * 0.5;  // Max 0.5 punti extra
   }
   
-  // 5. KEYWORD DENSITY FACTOR
-  const totalWords = contentLower.split(/\s+/).length;
-  const densityFactor = totalWords > 0 ? (score / totalWords) * 100 : 0;
+  // Bonus per title match (se presente nelle properties)
+  if (properties.title || properties.name || properties.Name) {
+    const title = (properties.title || properties.name || properties.Name || '').toLowerCase();
+    if (title.includes(normalizedQuery)) {
+      semanticPoints += 0.3;
+    }
+    // Check singole parole nel titolo
+    queryWords.forEach(word => {
+      if (title.includes(word)) {
+        semanticPoints += 0.1;
+      }
+    });
+  }
   
-  // Calcolo finale: score base + density factor
-  const finalScore = score + (densityFactor * 0.5);
+  scores.semantic = Math.min(semanticPoints, 1.0);
   
-  // Log per debug (solo per i primi risultati)
-  if (score > 5) {
-    console.log(`📊 Relevance Score: ${finalScore.toFixed(2)} for content starting with: "${content.substring(0, 50)}..."`);
+  // 3. POPULARITY SIGNAL (10%)
+  // Migliorato per riconoscere più segnali
+  let popularityScore = 0;
+  
+  // Check validation score
+  if (properties.validation_score) {
+    const score = parseFloat(properties.validation_score);
+    popularityScore += (score / 10) * 0.3;  // Normalizzato 0-10 → 0-0.3
+  }
+  
+  // Check best practice indicators
+  const bestPracticeIndicators = [
+    'best practice', 'best_practice', 'bestpractice',
+    'validated', 'proven', 'success'
+  ];
+  
+  const propsString = JSON.stringify(properties).toLowerCase();
+  bestPracticeIndicators.forEach(indicator => {
+    if (propsString.includes(indicator)) {
+      popularityScore += 0.2;
+    }
+  });
+  
+  // Bonus per completezza dati (più properties = più popolare/completo)
+  const propCount = Object.keys(properties).length;
+  if (propCount > 20) popularityScore += 0.3;
+  else if (propCount > 10) popularityScore += 0.2;
+  else if (propCount > 5) popularityScore += 0.1;
+  
+  scores.popularity = Math.min(popularityScore, 1.0);
+  
+  // CALCOLO FINALE con weights
+  const finalScore = 
+    (scores.crossDomain * 0.30) +
+    (scores.semantic * 0.60) +
+    (scores.popularity * 0.10);
+  
+  // Debug logging (rimuovere in produzione)
+  if (process.env.NODE_ENV === 'development') {
+    console.log('Scoring breakdown:', {
+      query: normalizedQuery.substring(0, 50),
+      crossDomain: scores.crossDomain.toFixed(2),
+      semantic: scores.semantic.toFixed(2),
+      popularity: scores.popularity.toFixed(2),
+      final: finalScore.toFixed(2)
+    });
   }
   
   return finalScore;
@@ -671,31 +723,57 @@ function calculateRelevance(content, query, properties = {}) {
 
 // 🔧 TASK 2.2: Calcola score finale normalizzato
 function calculateFinalScore(rawScore, content, properties, dbMaxScore) {
-  // Normalizzazione 0-100
-  const normalized = dbMaxScore > 0 ? (rawScore / dbMaxScore) * 100 : rawScore;
+  // NUOVA NORMALIZZAZIONE - Preserva differenze
+  // Usa una scala logaritmica per mantenere le proporzioni
+  let normalized;
   
-  // Penalità content vuoto
-  const contentPenalty = (content?.length || 0) < 50 ? 0.85 : 1;
+  if (dbMaxScore > 0) {
+    // Normalizzazione progressiva che mantiene le differenze
+    const ratio = rawScore / dbMaxScore;
+    
+    // Scala non lineare: score bassi rimangono bassi, alti rimangono alti
+    if (ratio < 0.1) {
+      normalized = ratio * 200;  // 0-0.1 → 0-20
+    } else if (ratio < 0.3) {
+      normalized = 20 + ((ratio - 0.1) * 150);  // 0.1-0.3 → 20-50
+    } else if (ratio < 0.6) {
+      normalized = 50 + ((ratio - 0.3) * 100);  // 0.3-0.6 → 50-80
+    } else {
+      normalized = 80 + ((ratio - 0.6) * 50);   // 0.6-1.0 → 80-100
+    }
+  } else {
+    normalized = rawScore * 100;
+  }
   
-  // DICHIARAZIONE propCount PRIMA dell'uso!
+  // DICHIARAZIONE propCount
   const propCount = Object.keys(properties || {}).length;
   
-  // Property penalty
+  // Penalità content vuoto (meno aggressiva)
+  const contentPenalty = (content?.length || 0) < 50 ? 0.9 : 1;
+  
+  // Property penalty (più bilanciata)
   let propertyPenalty = 1;
   if (propCount > 40) {
-    propertyPenalty = 0.9;
+    propertyPenalty = 0.95;  // Era 0.9
   } else if (propCount < 5) {
-    propertyPenalty = 0.8;
+    propertyPenalty = 0.85;  // Era 0.8
   }
   
-  // Boost per high raw scores
+  // Boost per high relevance (basato sul nuovo scoring 0-1)
   let relevanceBoost = 1;
-  if (rawScore > 500) {
-    relevanceBoost = 1.1;
+  if (rawScore > 0.8) {
+    relevanceBoost = 1.05;  // Boost leggero per score eccellenti
+  } else if (rawScore > 0.6) {
+    relevanceBoost = 1.02;  // Mini boost per score buoni
   }
   
-  // Score finale con boost
+  // Score finale con modificatori
   const finalScore = normalized * contentPenalty * propertyPenalty * relevanceBoost;
+  
+  // Log per debug
+  if (process.env.NODE_ENV === 'development') {
+    console.log(`📈 Normalizzazione: Raw=${rawScore.toFixed(3)} → Normalized=${normalized.toFixed(1)} → Final=${finalScore.toFixed(1)}`);
+  }
   
   return Math.min(Math.round(finalScore * 10) / 10, 100);
 }
