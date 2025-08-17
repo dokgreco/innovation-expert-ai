@@ -95,13 +95,13 @@ export default async function handler(req, res) {
     
     // Check secure cache first
     console.log(`🔍 [DEBUG] Looking for cache with key: ${cacheKey}`);
-    const cachedData = getSecureCache(cacheKey);
-if (cachedData && cachedData.length > 0) {
-  console.log(`✅ [SecureCache] Cache hit for: ${query}`);
-  console.log(`📊 [SecureCache] Using ${cachedData.length} cached records (instant)`);
-  
-  // USA DIRETTAMENTE I DATI CACHED, NO FETCH!
-  const cachedResults = cachedData;
+    const cachedIds = getSecureCache(cacheKey);
+    if (cachedIds && cachedIds.length > 0) {
+      console.log(`✅ [SecureCache] Cache hit for: ${query}`);
+      console.log(`📊 [SecureCache] Fetching ${cachedIds.length} cached records`);
+      
+      // PHASE 1: Fetch full data using cached IDs
+      const cachedResults = await fetchRecordsByIds(cachedIds);
       
       // Process for methodology
       const verticalResults = cachedResults.slice(0, 1);
@@ -457,42 +457,8 @@ allResults.slice(0, 3).forEach((r, idx) => {
 // 🔧 TASK 3.2: Applica diversity filters - TEMPORANEAMENTE DISABILITATO per Phase 1
 // allResults = applyDiversityFilters(allResults);
 console.log('⚠️ Diversity filter BYPASSED per Full Coverage test');
-
-// 🎯 NUOVO: Distribution Balance Control per F.3
-function applyDistributionBalance(results) {
-  console.log('📊 Applying Distribution Balance...');
-  
-  const DISTRIBUTION_TARGET = {
-    [databases[0]]: 5,   // DB1 Case Histories
-    [databases[1]]: 20,  // DB2 Best Practices  
-    [databases[2]]: 10   // DB3 Benchmark
-  };
-  
-  const balanced = [];
-  const counts = {
-    [databases[0]]: 0,
-    [databases[1]]: 0,
-    [databases[2]]: 0
-  };
-  
-  // Prendi i migliori per ogni DB fino al target
-  for (const result of results) {
-    const dbId = result.database;
-    if (counts[dbId] < DISTRIBUTION_TARGET[dbId]) {
-      balanced.push(result);
-      counts[dbId]++;
-    }
-    
-    // Stop quando abbiamo 35 totali
-    if (balanced.length >= 35) break;
-  }
-  
-  console.log(`✅ Distribution achieved: DB1=${counts[databases[0]]}, DB2=${counts[databases[1]]}, DB3=${counts[databases[2]]}`);
-  return balanced;
-}
-
-// Applica distribution balance INVECE del semplice slice
-allResults = applyDistributionBalance(allResults);
+// Limita a 35 risultati totali come da spec Phase 2
+allResults = allResults.slice(0, 35);
 
 console.log('📊 POST-DIVERSITY Distribution:');
 const dbCounts = {};
@@ -608,19 +574,12 @@ allResults.forEach((r, idx) => {
 console.log('=== END SCORING BREAKDOWN ===\n');
 console.log(`🔍 [DEBUG] Preparing to save cache with key: ${cacheKey}`);
     console.log(`🔍 [DEBUG] Results to cache: ${allResults.length} total, saving first 10`);
-// 🔒 SAVE TO SECURE CACHE (Full data for instant retrieval)
-const cacheData = allResults.slice(0, 35).map(r => ({
-  id: r.id,
-  title: r.title,
-  content: r.content,
-  properties: r.properties,
-  database: r.database,
-  relevanceScore: r.relevanceScore
-}));
-if (cacheData.length > 0) {
-  setSecureCache(cacheKey, cacheData);
-  console.log(`💾 [SecureCache] Saved ${cacheData.length} complete records to cache`);
-}   
+// 🔒 SAVE TO SECURE CACHE (IDs only)
+    const resultIds = allResults.slice(0, 10).map(r => r.id);
+    if (resultIds.length > 0) {
+      setSecureCache(cacheKey, resultIds);
+      console.log(`💾 [SecureCache] Saved ${resultIds.length} IDs to cache`);
+    }    
 // Structured response secondo metodologia proprietaria
     res.status(200).json({
       methodology: {
