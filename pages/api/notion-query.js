@@ -17,6 +17,38 @@ const databases = [
   process.env.NOTION_DATABASE_3
 ];
 
+// NUOVO: Funzione per fetch completo con pagination
+async function fetchAllFromDB(dbId, dbName) {
+  console.log(`🔍 Fetching ALL records from ${dbName}...`);
+  console.log(`📌 Database ID being queried: ${dbId}`);
+if (!dbId || dbId === 'undefined') {
+  console.error(`❌ ERROR: Database ID is invalid for ${dbName}!`);
+  return [];
+}
+  let allRecords = [];
+  let hasMore = true;
+  let startCursor = undefined;
+  let pageCount = 0;
+  
+  while (hasMore) {
+    const response = await notion.databases.query({
+      database_id: dbId,
+      page_size: 100, // Max allowed by Notion
+      start_cursor: startCursor,
+      // NO SORTS - prendiamo tutto
+    });
+    
+    allRecords.push(...response.results);
+    hasMore = response.has_more;
+    startCursor = response.next_cursor;
+    pageCount++;
+    
+    console.log(`📄 Page ${pageCount}: ${response.results.length} records`);
+  }
+  
+  console.log(`✅ ${dbName}: ${allRecords.length} total records fetched`);
+  return allRecords;
+}
 // TASK 6: Test suite automatizzato - COMPLETO
 const testQueries = [
   "E-learning platform for kids",
@@ -145,17 +177,13 @@ if (searchFilter) {
 }
 
 // 🔧 FIX 2: Usare il filtro nella query
-const dbResponse = await notion.databases.query({
-  database_id: dbId,
-  page_size: 20, // Ridotto per performance
-  filter: searchFilter, // 🆕 SEMPLIFICATO - passa direttamente searchFilter
-          sorts: [
-            {
-              timestamp: 'last_edited_time',
-              direction: 'descending'
-            }
-          ]
-        });
+// NUOVO: Fetch ALL records con pagination
+const dbName = `DB${databases.indexOf(dbId) + 1}`;
+const allDbRecords = await fetchAllFromDB(dbId, dbName);
+console.log(`📊 Processing ${allDbRecords.length} records from ${dbName}`);
+
+// Prepara i risultati per il processing esistente
+const dbResponse = { results: allDbRecords };
 
         // 🔍 DEBUG: Log risultati per database
     console.log(`📊 Database ${databases.indexOf(dbId) + 1}: ${dbResponse.results.length} pages trovate`);
@@ -176,7 +204,7 @@ if (dbResponse.results.length > 0) {
   console.log('🏷️ Properties disponibili:', Object.keys(dbResponse.results[0].properties));
 }
         // Get content of each page
-for (const page of dbResponse.results.slice(0, 5)) { // Limitato a 5 per performance
+for (const page of dbResponse.results) { // FULL processing - tutti i 244 records!
   // 🔍 DEBUG DB2 Content
   if (dbId === databases[1]) {
     const title = getPageTitle(page);
@@ -184,22 +212,31 @@ for (const page of dbResponse.results.slice(0, 5)) { // Limitato a 5 per perform
   }
   
   try {
-    const pageContent = await notion.blocks.children.list({
-      block_id: page.id,
-      page_size: 20 // Limitato per evitare payload troppo grandi
-    });
-            const content = pageContent.results
-              .filter(block => 
-  block.type === 'paragraph' && 
-  block.paragraph.rich_text.length > 0
-)
-              .map(block => block.paragraph.rich_text.map(text => text.plain_text).join(''))
-              .join(' ')
-              .substring(0, MAX_CONTENT_LENGTH)
-.replace(/\s+\S*$/, '...'); // Smart truncation - taglia all'ultima parola completa
+    // OTTIMIZZAZIONE: Usiamo SOLO le properties, NO blocks!
+// Estrai prima le properties
+const allProperties = extractAllProperties(page);
+
+// Costruisci il content dalle properties principali
+const contentFields = [
+  'Description', 'Description (ENG)',
+  'Value Proposition', 'Value Proposition (ENG)', 
+  'Value Proposition - Competing Formula',
+  'Impact', 'Impact (ENG)',
+  'JTDs', 'Hacked Trends',
+  'Business Model', 'Market Type Strategy',
+  'Target Market', 'Target Market (ENG)'
+];
+
+let contentParts = [];
+for (const field of contentFields) {
+  if (allProperties[field] && allProperties[field].length > 0) {
+    contentParts.push(allProperties[field]);
+  }
+}
+
+const content = contentParts.join(' ').substring(0, MAX_CONTENT_LENGTH);
 
             // 🔧 FIX 4: Solo aggiungere se c'è contenuto rilevante
-const allProperties = extractAllProperties(page);
 // Debug: verifica nuovo scoring
 console.log('📍 Calling calculateRelevance with:', {
   hasContent: !!content,
@@ -222,7 +259,7 @@ if (dbId === databases[1]) {
 }
 
 // MODIFICATO: Accetta anche se ha properties ricche, non solo content
-if (content.length > 10 || relevanceScore > 5 || Object.keys(allProperties).length > 10) {
+if (content.length > 10 || relevanceScore > 0.05 || Object.keys(allProperties).length > 5) {
   // 🔧 Prima salva il raw score per trovare il max
 const rawScore = relevanceScore;
 
@@ -332,11 +369,11 @@ function applyAdaptiveAcceptance(results) {
   
   // Calcola il 70° percentile (accetta solo top 30%)
   // Usa 60° percentile per essere meno restrittivi
-const cutoff = percentile(allScores, 60);
+const cutoff = percentile(allScores, 40);
   
   // Imposta un minimo di sicurezza per evitare di escludere tutto
   // Abbassa il minimo per accettare risultati con score più bassi ma rilevanti
-const minAcceptable = 25;
+const minAcceptable = 3.5;
   
   // Filtra risultati che superano la soglia adattiva
   const accepted = results.filter(r => {
@@ -417,8 +454,11 @@ allResults.slice(0, 3).forEach((r, idx) => {
   console.log(`  ${idx + 1}. ${r.title} - Score: ${r.finalScore || r.relevanceScore}, Content: ${r.content?.length || 0} chars, Priority fields: ${countPriorityFields(r.properties)}`);
 });
 
-// 🔧 TASK 3.2: Applica diversity filters
-allResults = applyDiversityFilters(allResults);
+// 🔧 TASK 3.2: Applica diversity filters - TEMPORANEAMENTE DISABILITATO per Phase 1
+// allResults = applyDiversityFilters(allResults);
+console.log('⚠️ Diversity filter BYPASSED per Full Coverage test');
+// Limita a 35 risultati totali come da spec Phase 2
+allResults = allResults.slice(0, 35);
 
 console.log('📊 POST-DIVERSITY Distribution:');
 const dbCounts = {};
@@ -1069,25 +1109,26 @@ function buildNotionFilter(dbId, query, keywords) {
   }
 
   const filterMap = {
-    [databases[0]]: { // DB1 - Verticals
-  or: [
-    { property: "Project Vertical", title: { contains: keywords[0] } },
-    { property: "Technology Adoption & Validation", rich_text: { contains: keywords[0] } }
-    // RIMUOVI la riga Keywords che causa l'errore
-  ]
-},
-    [databases[1]]: { // DB2 - Case Histories (FUNZIONA!)
-      or: [
-        { property: "Description", rich_text: { contains: keywords[0] } },
-        { property: "Description (ENG)", rich_text: { contains: keywords[0] } },
-        { property: "Value Proposition", rich_text: { contains: keywords[0] } }
-      ]
-    },
-    [databases[2]]: { // DB3 - Mixed
+    [databases[0]]: { // DB1 - Verticals (CORRETTI)
       or: [
         { property: "Project Vertical", title: { contains: keywords[0] } },
-        // JTDs è rich_text, dovrebbe funzionare
+        { property: "Market Type Strategy", rich_text: { contains: keywords[0] } },
+        { property: "Technology Adoption & Validation", rich_text: { contains: keywords[0] } }
+      ]
+    },
+    [databases[1]]: { // DB2 - Case Histories (CORRETTI ORA!)
+      or: [
+        { property: "Target Market (ENG)", rich_text: { contains: keywords[0] } },
+        { property: "Value Proposition (ENG)", rich_text: { contains: keywords[0] } },
+        { property: "Hacked Trends", rich_text: { contains: keywords[0] } },
         { property: "JTDs", rich_text: { contains: keywords[0] } }
+      ]
+    },
+    [databases[2]]: { // DB3 - Mixed (CORRETTI)
+      or: [
+        { property: "Value Proposition - Competing Formula", rich_text: { contains: keywords[0] } },
+        { property: "Target Synergies", rich_text: { contains: keywords[0] } },
+        { property: "Competing Factors", rich_text: { contains: keywords[0] } }
       ]
     }
   };
