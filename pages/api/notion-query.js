@@ -457,8 +457,42 @@ allResults.slice(0, 3).forEach((r, idx) => {
 // 🔧 TASK 3.2: Applica diversity filters - TEMPORANEAMENTE DISABILITATO per Phase 1
 // allResults = applyDiversityFilters(allResults);
 console.log('⚠️ Diversity filter BYPASSED per Full Coverage test');
-// Limita a 35 risultati totali come da spec Phase 2
-allResults = allResults.slice(0, 35);
+
+// 🎯 NUOVO: Distribution Balance Control per F.3
+function applyDistributionBalance(results) {
+  console.log('📊 Applying Distribution Balance...');
+  
+  const DISTRIBUTION_TARGET = {
+    [databases[0]]: 5,   // DB1 Case Histories
+    [databases[1]]: 20,  // DB2 Best Practices  
+    [databases[2]]: 10   // DB3 Benchmark
+  };
+  
+  const balanced = [];
+  const counts = {
+    [databases[0]]: 0,
+    [databases[1]]: 0,
+    [databases[2]]: 0
+  };
+  
+  // Prendi i migliori per ogni DB fino al target
+  for (const result of results) {
+    const dbId = result.database;
+    if (counts[dbId] < DISTRIBUTION_TARGET[dbId]) {
+      balanced.push(result);
+      counts[dbId]++;
+    }
+    
+    // Stop quando abbiamo 35 totali
+    if (balanced.length >= 35) break;
+  }
+  
+  console.log(`✅ Distribution achieved: DB1=${counts[databases[0]]}, DB2=${counts[databases[1]]}, DB3=${counts[databases[2]]}`);
+  return balanced;
+}
+
+// Applica distribution balance INVECE del semplice slice
+allResults = applyDistributionBalance(allResults);
 
 console.log('📊 POST-DIVERSITY Distribution:');
 const dbCounts = {};
