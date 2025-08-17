@@ -1,7 +1,19 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { FileText, Target, Rocket, BarChart3, CheckCircle } from 'lucide-react';
 
-export default function AnalysisDisplay({ data }) {
+// Helper function per formattare il testo (spostata fuori per evitare ricreazioni)
+function formatSection(text) {
+  if (!text) return '';
+  
+  // Converti markdown base in HTML
+  return text
+    .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>') // bold
+    .replace(/\n/g, '<br />') // line breaks
+    .replace(/- /g, '• '); // bullet points
+}
+
+// Componente ottimizzato con React.memo
+const AnalysisDisplay = memo(function AnalysisDisplay({ data }) {
   if (!data || !data.parsedSections) return null;
 
   const sections = data.parsedSections;
@@ -74,15 +86,14 @@ export default function AnalysisDisplay({ data }) {
       )}
     </div>
   );
-}
-
-// Helper function per formattare il testo
-function formatSection(text) {
-  if (!text) return '';
+}, (prevProps, nextProps) => {
+  // Comparazione personalizzata: evita re-render se i dati sono gli stessi
+  if (!prevProps.data && !nextProps.data) return true;
+  if (!prevProps.data || !nextProps.data) return false;
   
-  // Converti markdown base in HTML
-  return text
-    .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>') // bold
-    .replace(/\n/g, '<br />') // line breaks
-    .replace(/- /g, '• '); // bullet points
-}
+  // Confronta solo parsedSections che è quello che usiamo
+  return JSON.stringify(prevProps.data.parsedSections) === JSON.stringify(nextProps.data.parsedSections);
+});
+
+// Export del componente memoizzato
+export default AnalysisDisplay;

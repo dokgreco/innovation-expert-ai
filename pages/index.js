@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import { 
   Send, Bot, User, Database, Brain, Lightbulb, TrendingUp, 
   Filter, Save, History, Star, Search, FileText,
@@ -17,6 +17,10 @@ const steps = [
   { num: 4, label: "Scoring", icon: <Award size={16} /> }
 ];
 
+// Lazy load del componente Deep Dive per performance
+// Componente inline per Deep Dive (lazy loading non necessario per componenti inline)
+// Commentato per future implementazioni
+// const DeepDiveSection = lazy(() => import('../components/DeepDiveSection'));
 export default function InnovationExpertAI() {
   const [messages, setMessages] = useState([
     { 
@@ -521,8 +525,8 @@ console.log('🎯 RESULT DAL BACKEND:', {
   <>
     {/* NUOVA LOGICA: Mostra Deep Dive O messages normali */}
     {currentStep === 2 && deepDiveMode ? (
-      // VISTA DEEP DIVE
-      <div className="max-w-4xl mx-auto">
+  // VISTA DEEP DIVE
+  <div className="max-w-4xl mx-auto">
         {/* Back button */}
         <button
           onClick={() => setDeepDiveMode(null)}
@@ -702,8 +706,8 @@ console.log('🎯 RESULT DAL BACKEND:', {
   </div>
 </div>
       </div>
-    ) : (
-      // VISTA NORMALE (tutto il codice esistente dei messages)
+  ) : (
+    // VISTA NORMALE
       <>
         {messages.map((message) => (
           <div key={message.id} className="flex gap-3">
