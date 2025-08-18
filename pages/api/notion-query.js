@@ -18,7 +18,7 @@ const databases = [
 ];
 
 // NUOVO: Funzione per fetch completo con pagination
-async function fetchAllFromDB(dbId, dbName) {
+async function fetchAllFromDB(dbId, dbName, searchFilter = null) {
   console.log(`🔍 Fetching ALL records from ${dbName}...`);
   console.log(`📌 Database ID being queried: ${dbId}`);
 if (!dbId || dbId === 'undefined') {
@@ -32,11 +32,11 @@ if (!dbId || dbId === 'undefined') {
   
   while (hasMore) {
     const response = await notion.databases.query({
-      database_id: dbId,
-      page_size: 100, // Max allowed by Notion
-      start_cursor: startCursor,
-      // NO SORTS - prendiamo tutto
-    });
+  database_id: dbId,
+  page_size: 100,
+  start_cursor: startCursor,
+  ...(searchFilter && { filter: searchFilter })
+});
     
     allRecords.push(...response.results);
     hasMore = response.has_more;
@@ -179,7 +179,7 @@ if (searchFilter) {
 // 🔧 FIX 2: Usare il filtro nella query
 // NUOVO: Fetch ALL records con pagination
 const dbName = `DB${databases.indexOf(dbId) + 1}`;
-const allDbRecords = await fetchAllFromDB(dbId, dbName);
+const allDbRecords = await fetchAllFromDB(dbId, dbName, searchFilter);
 console.log(`📊 Processing ${allDbRecords.length} records from ${dbName}`);
 
 // Prepara i risultati per il processing esistente
@@ -622,7 +622,9 @@ if (cacheData.length > 0) {
   console.log(`💾 [SecureCache] Saved ${cacheData.length} complete records to cache`);
 }   
 // Structured response secondo metodologia proprietaria
-    res.status(200).json({
+// Cache headers per Vercel
+res.setHeader('Cache-Control', 's-maxage=3600, stale-while-revalidate');    
+res.status(200).json({
       methodology: {
         step1_verticals: {
           top3: verticalResults,

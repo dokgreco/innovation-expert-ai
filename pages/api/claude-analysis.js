@@ -376,10 +376,22 @@ Ricorda: stai analizzando "${query}" basandoti su dati reali da ${notionData.tot
 
     // PARSING DELLE 9 SEZIONI
     const extractSection = (text, marker) => {
-      const regex = new RegExp(`${marker}[\\s\\S]*?(?=\\n\\n[0-9]\\.|\\n\\n[A-Z]|PARTE|$)`, 'i');
-      const match = text.match(regex);
-      return match ? match[0].replace(marker, '').trim() : '';
-    };
+  // Pattern più preciso per fermarsi alla prossima sezione numerata (4-8) o alla PARTE 3
+  const regex = new RegExp(
+    `${marker}[\\s\\S]*?(?=\\n\\n?(?:4|5|6|7|8)\\.|\\n\\n?###\\s*(?:4|5|6|7|8)\\.|PARTE 3|$)`, 
+    'i'
+  );
+  const match = text.match(regex);
+  if (!match) return '';
+  
+  // Rimuovi il marker e pulisci il contenuto
+  let content = match[0].replace(marker, '').trim();
+  
+  // Rimuovi eventuali numeri di sezione alla fine
+  content = content.replace(/\n\n?(?:5|6|7|8)\.\s*.*$/s, '');
+  
+  return content;
+};
 
     // CHIAMA extractQuestions PRIMA di usarla in parsedSections
     const extractedQuestions = extractQuestions(analysis);
@@ -453,7 +465,8 @@ const parsedSections = {
         id: process.env.NOTION_DATABASE_3 
       }
     ];
-
+// Cache headers per Vercel
+res.setHeader('Cache-Control', 's-maxage=3600, stale-while-revalidate');
     res.status(200).json({
       analysis,
       parsedSections: parsedAnalysis,

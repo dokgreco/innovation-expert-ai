@@ -9,6 +9,57 @@ import {
 import AnalysisDisplay from '../components/StructuredAnalysisDisplay';
 import ValidationQuestions from '../components/ValidationQuestions';
 
+// Funzione avanzata per formattare il testo Markdown in HTML
+const formatMarkdownText = (text) => {
+  if (!text) return '';
+  
+  // Prima passa: sostituisci i pattern Markdown con HTML
+  let formatted = text
+    // Headers - gestisci prima quelli con emoji e senza
+    .replace(/^###\s+(.+)$/gm, '<h3 class="font-bold text-base mt-4 mb-2 text-indigo-900">$1</h3>')
+    .replace(/^##\s+(.+)$/gm, '<h2 class="font-bold text-lg mt-5 mb-3 text-indigo-800 border-b border-indigo-200 pb-2">$1</h2>')
+    .replace(/^#\s+(.+)$/gm, '<h1 class="font-bold text-xl mt-6 mb-4 text-indigo-700">$1</h1>')
+    
+    // Bold text con : (tipo "KEY POINT: testo")
+    .replace(/\*\*([^:]+):\*\*\s*(.+)$/gm, 
+      '<div class="my-3"><span class="font-semibold text-indigo-700 inline-block min-w-[140px]">$1:</span> <span class="text-gray-700">$2</span></div>')
+    
+    // Bold text normale
+    .replace(/\*\*([^*]+)\*\*/g, '<strong class="font-semibold text-gray-900">$1</strong>')
+    
+    // Liste puntate con - all'inizio della riga
+    .replace(/^-\s+(.+)$/gm, '<li class="ml-6 mb-2 text-gray-700">• $1</li>')
+    
+    // Liste numerate (es: "1. testo")
+    .replace(/^(\d+)\.\s+(.+)$/gm, 
+      '<div class="flex gap-3 my-3 ml-4"><span class="font-bold text-indigo-600 flex-shrink-0">$1.</span><span class="text-gray-700 flex-1">$2</span></div>')
+    
+    // Paragrafi (doppio a capo)
+    .replace(/\n\n/g, '</p><p class="mb-3 text-gray-700">');
+  
+  // Seconda passa: sistema le liste
+  formatted = formatted
+    // Raggruppa i <li> consecutivi in <ul>
+    .replace(/(<li[^>]*>.*?<\/li>\s*)+/g, (match) => {
+      return '<ul class="list-none space-y-2 my-3">' + match + '</ul>';
+    });
+  
+  // Terza passa: pulisci e wrappa
+  if (!formatted.startsWith('<')) {
+    formatted = '<p class="mb-3 text-gray-700">' + formatted;
+  }
+  if (!formatted.endsWith('>')) {
+    formatted = formatted + '</p>';
+  }
+  
+  // Fix: rimuovi </p><p> vuoti
+  formatted = formatted
+    .replace(/<p[^>]*>\s*<\/p>/g, '')
+    .replace(/<p class="mb-3 text-gray-700"><h/g, '<h')
+    .replace(/<\/h(\d)><\/p>/g, '</h$1>');
+  
+  return formatted;
+};
 // Progress steps configuration
 const steps = [
   { num: 1, label: "Input", icon: <Edit3 size={16} /> },
@@ -559,74 +610,74 @@ console.log('🎯 RESULT DAL BACKEND:', {
         
         switch(deepDiveMode) {
   case 'jtbd-trends':
-    return (
-      <>
-        {sections.jtbdTrends && (
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold text-gray-800">Jobs-to-be-Done & Market Trends</h3>
-            <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-4">
-              <div className="whitespace-pre-wrap text-gray-700">{sections.jtbdTrends}</div>
-            </div>
+  return (
+    <>
+      {sections.jtbdTrends && (
+        <div className="space-y-4">
+          <h3 className="text-lg font-semibold text-gray-800">Jobs-to-be-Done & Market Trends</h3>
+          <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-4">
+            <div className="text-gray-700" dangerouslySetInnerHTML={{ __html: formatMarkdownText(sections.jtbdTrends) }} />
           </div>
-        )}
-      </>
-    );
-    
-  case 'competitive':
-    return (
-      <>
-        {sections.competitiveCanvas && (
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold text-gray-800">Competitive Positioning Canvas</h3>
-            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-              <div className="whitespace-pre-wrap text-gray-700">{sections.competitiveCanvas}</div>
-            </div>
+        </div>
+      )}
+    </>
+  );
+  
+case 'competitive':
+  return (
+    <>
+      {sections.competitiveCanvas && (
+        <div className="space-y-4">
+          <h3 className="text-lg font-semibold text-gray-800">Competitive Positioning Canvas</h3>
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+            <div className="text-gray-700" dangerouslySetInnerHTML={{ __html: formatMarkdownText(sections.competitiveCanvas) }} />
           </div>
-        )}
-      </>
-    );
-    
-  case 'tech-validation':
-    return (
-      <>
-        {sections.techValidation && (
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold text-gray-800">Technology Adoption & Validation</h3>
-            <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-              <div className="whitespace-pre-wrap text-gray-700">{sections.techValidation}</div>
-            </div>
+        </div>
+      )}
+    </>
+  );
+  
+case 'tech-validation':
+  return (
+    <>
+      {sections.techValidation && (
+        <div className="space-y-4">
+          <h3 className="text-lg font-semibold text-gray-800">Technology Adoption & Validation</h3>
+          <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+            <div className="text-gray-700" dangerouslySetInnerHTML={{ __html: formatMarkdownText(sections.techValidation) }} />
           </div>
-        )}
-      </>
-    );
-    
-  case 'process-metrics':
-    return (
-      <>
-        {sections.processMetrics && (
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold text-gray-800">Process & Metrics</h3>
-            <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
-              <div className="whitespace-pre-wrap text-gray-700">{sections.processMetrics}</div>
-            </div>
+        </div>
+      )}
+    </>
+  );
+  
+case 'process-metrics':
+  return (
+    <>
+      {sections.processMetrics && (
+        <div className="space-y-4">
+          <h3 className="text-lg font-semibold text-gray-800">Process & Metrics</h3>
+          <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+            <div className="text-gray-700" dangerouslySetInnerHTML={{ __html: formatMarkdownText(sections.processMetrics) }} />
           </div>
-        )}
-      </>
-    );
-    
-  case 'partnership':
-    return (
-      <>
-        {sections.partnership && (
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold text-gray-800">Partnership Activation</h3>
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-              <div className="whitespace-pre-wrap text-gray-700">{sections.partnership}</div>
-            </div>
+        </div>
+      )}
+    </>
+  );
+  
+case 'partnership':
+  return (
+    <>
+      {sections.partnership && (
+        <div className="space-y-4">
+          <h3 className="text-lg font-semibold text-gray-800">Partnership Activation</h3>
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <div className="text-gray-700" dangerouslySetInnerHTML={{ __html: formatMarkdownText(sections.partnership) }} />
           </div>
-        )}
-      </>
-    );
+        </div>
+      )}
+    </>
+  );
     
   default:
     return <p className="text-gray-500">Sezione non disponibile. Fai prima un'analisi completa.</p>;
@@ -647,7 +698,7 @@ console.log('🎯 RESULT DAL BACKEND:', {
       <div className="mb-4 space-y-3 max-h-60 overflow-y-auto">
         {sectionConversations[deepDiveMode].map((msg, idx) => (
           <div key={idx} className={`flex gap-3 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-            <div className={`max-w-xs p-3 rounded-lg ${
+            <div className={`flex-1 p-3 rounded-lg ${
               msg.role === 'user' 
                 ? 'bg-indigo-600 text-white' 
                 : 'bg-gray-100 text-gray-800'
