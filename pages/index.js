@@ -76,18 +76,25 @@ const steps = [
 // Commentato per future implementazioni
 // const DeepDiveSection = lazy(() => import('../components/DeepDiveSection'));
 export default function InnovationExpertAI() {
-  const { t } = useTranslation('common');
+  const { t, ready } = useTranslation('common');
   const router = useRouter();
   
-  const [messages, setMessages] = useState([
-    { 
-      id: '1',
-      role: 'assistant', 
-      content: t('welcome.message'),
-      timestamp: new Date(),
-      category: 'welcome'
+  const [messages, setMessages] = useState([]);
+  
+  // Set initial message after translations are loaded
+  useEffect(() => {
+    if (messages.length === 0 && ready && t('welcome.message')) {
+      setMessages([
+        { 
+          id: '1',
+          role: 'assistant', 
+          content: t('welcome.message'),
+          timestamp: new Date(),
+          category: 'welcome'
+        }
+      ]);
     }
-  ]);
+  }, [t, ready, messages.length]);
   
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -410,6 +417,18 @@ console.log('🎯 RESULT DAL BACKEND:', {
       setIsAnalyzing(false);
     }
   };
+
+  // Show loading while translations are being loaded
+  if (!ready) {
+    return (
+      <div className="flex h-screen w-full bg-gray-50 items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-screen w-full bg-gray-50 relative">
