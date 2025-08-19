@@ -6,6 +6,9 @@ import {
   Clock, Bookmark, X, Plus, Edit3, Check, Loader, Menu,
   Award, CheckCircle, Users, MessageCircle
 } from 'lucide-react';
+import { useTranslation } from 'next-i18next';
+import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
+import { useRouter } from 'next/router';
 import AnalysisDisplay from '../components/StructuredAnalysisDisplay';
 import ValidationQuestions from '../components/ValidationQuestions';
 
@@ -73,11 +76,14 @@ const steps = [
 // Commentato per future implementazioni
 // const DeepDiveSection = lazy(() => import('../components/DeepDiveSection'));
 export default function InnovationExpertAI() {
+  const { t } = useTranslation('common');
+  const router = useRouter();
+  
   const [messages, setMessages] = useState([
     { 
       id: '1',
       role: 'assistant', 
-      content: 'Ciao! Sono il tuo Innovation Expert AI. Ho accesso ai database Notion con oltre 200 case histories e best practices per valutare startup e progetti innovativi. Usa i quick prompts per iniziare o fammi una domanda specifica.',
+      content: t('welcome.message'),
       timestamp: new Date(),
       category: 'welcome'
     }
@@ -107,69 +113,69 @@ const [scoringData, setScoringData] = useState(null);
 const [sectionConversations, setSectionConversations] = useState({});
 const [sectionInputs, setSectionInputs] = useState({});
 const [sectionLoading, setSectionLoading] = useState({});
-  // Quick Prompts essenziali con testi completi
+  // Quick Prompts essenziali con traduzioni
   const quickPrompts = [
     {
       id: 'eval-startup',
-      text: 'Evaluate Startup',
-      prompt: 'Analyze this startup idea using the innovation evaluation methodology from Notion databases. Provide a structured score and compare with similar case histories.',
+      text: t('quickPrompts.evalStartup.text'),
+      prompt: t('quickPrompts.evalStartup.prompt'),
       icon: <Rocket size={14} />
     },
     {
       id: 'market-analysis',
-      text: 'Market Analysis',
-      prompt: 'Provide a detailed market analysis for this innovation, including trends, competitors and opportunities based on best practices from Notion databases.',
+      text: t('quickPrompts.marketAnalysis.text'),
+      prompt: t('quickPrompts.marketAnalysis.prompt'),
       icon: <BarChart3 size={14} />
     },
     {
       id: 'best-practices',
-      text: 'Best Practices',
-      prompt: 'Show me the most relevant best practices for this sector, extracting insights from available case histories in Notion databases.',
+      text: t('quickPrompts.bestPractices.text'),
+      prompt: t('quickPrompts.bestPractices.prompt'),
       icon: <Star size={14} />
     },
     {
       id: 'compare-cases',
-      text: 'Compare Cases',
-      prompt: 'Compare this project with the most relevant case histories in Notion databases, highlighting similarities, differences and lessons learned.',
+      text: t('quickPrompts.compareCases.text'),
+      prompt: t('quickPrompts.compareCases.prompt'),
       icon: <Target size={14} />
     }
   ];
 
-  // Deep Dive Sections aligned with V2 structure (5 operational sections)
+  // Deep Dive Sections con traduzioni
 const deepDiveSections = [
   { 
     icon: <Target size={14} />, 
-    text: "Jobs-to-be-Done & Market Trends", 
+    text: t('deepDive.sections.jtbdTrends.title'), 
     key: "jtbd-trends",
-    subtitle: "Execution patterns from case histories",
+    subtitle: t('deepDive.sections.jtbdTrends.subtitle'),
     count: sectionConversations['jtbd-trends']?.length || 0
   },
   { 
     icon: <Zap size={14} />, 
-    text: "Competitive Positioning Canvas", 
+    text: t('deepDive.sections.competitive.title'), 
     key: "competitive",
-    subtitle: "Differentiation strategies & moats",
+    subtitle: t('deepDive.sections.competitive.subtitle'),
     count: sectionConversations.competitive?.length || 0
   },
   { 
     icon: <Rocket size={14} />, 
-    text: "Technology Adoption & Validation", 
+    text: t('deepDive.sections.techValidation.title'), 
     key: "tech-validation",
-    subtitle: "Tech stack & architecture patterns",
+    subtitle: t('deepDive.sections.techValidation.subtitle'),
     count: sectionConversations['tech-validation']?.length || 0
   },
   { 
     icon: <BarChart3 size={14} />, 
-    text: "Process & Metrics", 
+    text: t('deepDive.sections.processMetrics.title'), 
     key: "process-metrics",
-    subtitle: "KPIs & operational excellence",
+    subtitle: t('deepDive.sections.processMetrics.subtitle'),
     count: sectionConversations['process-metrics']?.length || 0
   },
   { 
     icon: <Users size={14} />, 
-    text: "Partnership Activation", 
+    text: t('deepDive.sections.partnership.title'), 
     key: "partnership",
-    subtitle: "Strategic alliances & channels",
+    subtitle: t('deepDive.sections.partnership.subtitle'),
     count: sectionConversations.partnership?.length || 0
   }
 ];
@@ -338,6 +344,7 @@ if (!stepHistory.includes(2)) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           query: currentInput,
+          locale: router.locale,
           notionData: {
             totalResults: notionData.totalResults || 0,
             insights: (notionData.insights || []).slice(0, 3),
@@ -424,7 +431,7 @@ console.log('🎯 RESULT DAL BACKEND:', {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Brain size={16} />
-              <span className="font-bold text-sm">Innovation Expert</span>
+              <span className="font-bold text-sm">{t('app.title')}</span>
             </div>
             <button 
               onClick={() => setSidebarOpen(false)}
@@ -470,13 +477,13 @@ console.log('🎯 RESULT DAL BACKEND:', {
                 ))}
               </div>
               <p className="text-xs text-gray-500 mt-3 text-center">
-                🚀 Interactive analysis coming in next update
+                {t('ui.buttons.comingSoon')}
               </p>
             </div>
           )}
           {selectedFilters.length > 0 && (
             <div className="mt-4">
-              <h3 className="text-xs font-semibold text-gray-700 mb-2">Filtri Attivi</h3>
+              <h3 className="text-xs font-semibold text-gray-700 mb-2">{t('ui.filters.active')}</h3>
               <div className="flex flex-wrap gap-1">
                 {selectedFilters.map(filter => {
                   const [type, value] = filter.split(':');
@@ -510,7 +517,7 @@ console.log('🎯 RESULT DAL BACKEND:', {
             <div className="flex items-center gap-2">
               <Database size={16} className={notionConnected ? 'text-green-600' : 'text-red-600'} />
               <span className="text-sm font-medium text-gray-700">
-                3 Database Notion
+                {t('system.status.databases')}
               </span>
               {selectedFilters.length > 0 && (
                 <span className="text-xs text-indigo-600 bg-indigo-100 px-2 py-1 rounded-full">
@@ -520,14 +527,34 @@ console.log('🎯 RESULT DAL BACKEND:', {
             </div>
           </div>
           
-          <button
-            onClick={() => setShowSaveDialog(true)}
-            disabled={messages.length <= 1}
-            className="flex items-center gap-1 px-3 py-1 text-xs bg-indigo-600 text-white rounded hover:bg-indigo-700 disabled:opacity-50 transition-colors"
-          >
-            <Save size={12} />
-            Salva
-          </button>
+          <div className="flex items-center gap-3">
+            {/* Language Switcher */}
+            <div className="flex items-center">
+              <button
+                onClick={() => {
+                  const newLocale = router.locale === 'it' ? 'en' : 'it';
+                  const { pathname, asPath, query } = router;
+                  router.push({ pathname, query }, asPath, { locale: newLocale });
+                }}
+                className="flex items-center gap-2 px-3 py-1 text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-full transition-colors border"
+                title={t('language.switch')}
+              >
+                <span className="font-medium">{t(`language.code.${router.locale}`)}</span>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" className="opacity-60">
+                  <path d="M12.87 15.07l-2.54-2.51.03-.03c1.74-1.94 2.98-4.17 3.71-6.53H17V4h-7V2H8v2H1v1.99h11.17C11.5 7.92 10.44 9.75 9 11.35 8.07 10.32 7.3 9.19 6.69 8h-2c.73 1.63 1.73 3.17 2.98 4.56l-5.09 5.02L4 19l5-5 3.11 3.11.76-2.04zM18.5 10h-2L12 22h2l1.12-3h4.75L21 22h2l-4.5-12zm-2.62 7l1.62-4.33L19.12 17h-3.24z" />
+                </svg>
+              </button>
+            </div>
+            
+            <button
+              onClick={() => setShowSaveDialog(true)}
+              disabled={messages.length <= 1}
+              className="flex items-center gap-1 px-3 py-1 text-xs bg-indigo-600 text-white rounded hover:bg-indigo-700 disabled:opacity-50 transition-colors"
+            >
+              <Save size={12} />
+              {t('navigation.save')}
+            </button>
+          </div>
         </div>
 {/* Progress Indicator */}
         <div className="flex items-center justify-center space-x-4 p-4 bg-gradient-to-r from-indigo-50 to-purple-50 border-b border-gray-200">
@@ -564,9 +591,9 @@ console.log('🎯 RESULT DAL BACKEND:', {
             {/* Step-based content display */}
             {currentStep === 1 && (
               <div className="max-w-4xl mx-auto text-center">
-                <h1 className="text-3xl font-bold text-gray-900 mb-4">Innovation Pattern Analysis</h1>
+                <h1 className="text-3xl font-bold text-gray-900 mb-4">{t('app.title')} {t('app.subtitle')}</h1>
                 <p className="text-gray-600 mb-8">
-                  Descrivi il tuo progetto innovativo per una valutazione basata su 200+ case histories e metodologia proprietaria.
+                  {t('app.description')}
                 </p>
               </div>
             )}
@@ -584,7 +611,7 @@ console.log('🎯 RESULT DAL BACKEND:', {
           className="mb-6 flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
         >
           <ChevronRight className="rotate-180" size={20} />
-          <span>Back to full analysis</span>
+          <span>{t('deepDive.backToAnalysis')}</span>
         </button>
         
         {/* Deep Dive Content */}
@@ -690,7 +717,7 @@ case 'partnership':
   <div className="bg-white border border-gray-200 rounded-lg p-6">
     <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
       <MessageCircle size={20} className="text-indigo-600" />
-      Approfondisci questa sezione
+      {t('deepDive.askMore')}
     </h3>
     
     {/* Thread conversazione per questa sezione */}
@@ -717,7 +744,7 @@ case 'partnership':
     {sectionLoading[deepDiveMode] && (
       <div className="flex items-center gap-2 mb-4 p-3 bg-indigo-50 rounded-lg">
         <Loader className="animate-spin h-4 w-4 text-indigo-600" />
-        <span className="text-sm text-indigo-700">Analizzo la tua domanda...</span>
+        <span className="text-sm text-indigo-700">{t('deepDive.generating')}</span>
       </div>
     )}
     
@@ -732,13 +759,7 @@ case 'partnership':
             handleSectionQuestion(deepDiveMode, sectionInputs[deepDiveMode]);
           }
         }}
-        placeholder={`Chiedi approfondimenti su ${
-  deepDiveMode === 'jtbd-trends' ? 'Jobs-to-be-Done e trend di mercato' :
-  deepDiveMode === 'competitive' ? 'posizionamento competitivo' :
-  deepDiveMode === 'tech-validation' ? 'tecnologie e validazione' :
-  deepDiveMode === 'process-metrics' ? 'metriche e processi' :
-  'strategie di partnership'
-}...`}
+        placeholder={t(`deepDive.placeholder.${deepDiveMode}`)}
         className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm"
         disabled={sectionLoading[deepDiveMode]}
       />
@@ -752,7 +773,7 @@ case 'partnership':
     </div>
     
     <div className="mt-2 text-xs text-gray-500">
-      💡 Esempi: "Quali sono i rischi principali?", "Come posso differenziarmi?", "Quali metriche monitorare?"
+      {t('deepDive.examples')}
     </div>
   </div>
 </div>
@@ -830,7 +851,7 @@ case 'partnership':
   <div className="mt-6">
     <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-4 mb-4">
                           <p className="text-sm text-indigo-800">
-                            ✅ Analisi completata! Procedi con la validazione per generare lo scoring calibrato.
+                            {t('analysis.completed')}
                           </p>
                         </div>
                         <button
@@ -843,7 +864,7 @@ case 'partnership':
                           className="w-full px-4 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors flex items-center justify-center gap-2"
                         >
                           <CheckCircle size={20} />
-                          Procedi alla Validazione
+                          {t('ui.buttons.proceed')}
                         </button>
                       </div>
                     )}
@@ -989,7 +1010,7 @@ case 'partnership':
 
                 {message.sources && message.sources.length > 0 && (
                   <div className="mt-4 pt-4 border-t border-gray-200">
-                    <p className="text-xs font-medium text-gray-600 mb-2">🔍 Database Consultati:</p>
+                    <p className="text-xs font-medium text-gray-600 mb-2">🔍 {t('ui.conversation.analyzed')}:</p>
                     <div className="space-y-2">
                       {message.sources.map((source, idx) => (
                         <div key={idx} className="flex items-center justify-between text-xs bg-gray-50 px-3 py-2 rounded">
@@ -1000,7 +1021,7 @@ case 'partnership':
                     </div>
                     {message.notionQuery && (
                       <div className="mt-2 text-xs text-gray-600">
-                        Totale risultati: {message.notionQuery.totalResults} • Filtri: {message.notionQuery.filtersApplied}
+                        {t('ui.conversation.totalResults')}: {message.notionQuery.totalResults} • {t('ui.conversation.filters')}: {message.notionQuery.filtersApplied}
                       </div>
                     )}
                   </div>
@@ -1013,7 +1034,7 @@ case 'partnership':
                   minute: '2-digit' 
                 })}</span>
                 {message.role === 'assistant' && !message.isError && (
-                  <span className="text-green-600">• DB analizzati</span>
+                  <span className="text-green-600">• {t('ui.conversation.analyzed')}</span>
                 )}
               </div>
             </div>
@@ -1034,7 +1055,7 @@ case 'partnership':
             <div className="bg-white text-gray-800 p-4 rounded-lg border border-gray-200 shadow-sm flex-1">
               <div className="flex items-center gap-2">
                 <Loader className="animate-spin h-4 w-4 text-purple-500" />
-                <span className="text-sm">Analizzo i database Notion...</span>
+                <span className="text-sm">{t('system.loading.notion')}</span>
               </div>
             </div>
           </div>
@@ -1048,7 +1069,7 @@ case 'partnership':
             <div className="bg-white text-gray-800 p-4 rounded-lg border border-gray-200 shadow-sm flex-1">
               <div className="flex items-center gap-2">
                 <Loader className="animate-spin h-4 w-4 text-indigo-500" />
-                <span className="text-sm">Elaboro l'analisi di innovazione...</span>
+                <span className="text-sm">{t('system.loading.claude')}</span>
               </div>
             </div>
           </div>
@@ -1069,7 +1090,7 @@ case 'partnership':
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleSubmit(e)}
-              placeholder="Descrivi la tua startup o progetto innovativo per la valutazione..."
+              placeholder={t('form.placeholder')}
               className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm"
               disabled={isLoading || isAnalyzing}
             />
@@ -1092,12 +1113,12 @@ case 'partnership':
       {showSaveDialog && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white p-6 rounded-lg shadow-xl max-w-md w-full">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Salva Conversazione</h3>
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">{t('save.conversation')}</h3>
             <input
               type="text"
               value={conversationTitle}
               onChange={(e) => setConversationTitle(e.target.value)}
-              placeholder="Titolo della conversazione..."
+              placeholder={t('save.title')}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 mb-4"
               autoFocus
             />
@@ -1106,7 +1127,7 @@ case 'partnership':
                 onClick={() => setShowSaveDialog(false)}
                 className="px-4 py-2 text-gray-600 hover:text-gray-800 border border-gray-300 rounded-lg hover:bg-gray-50"
               >
-                Annulla
+                {t('ui.buttons.cancel')}
               </button>
               <button
                 onClick={() => {
@@ -1125,7 +1146,7 @@ case 'partnership':
                 disabled={!conversationTitle.trim()}
                 className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50"
               >
-                Salva
+                {t('navigation.save')}
               </button>
             </div>
           </div>
@@ -1133,4 +1154,12 @@ case 'partnership':
       )}
     </div>
   );
+}
+
+export async function getServerSideProps({ locale }) {
+  return {
+    props: {
+      ...(await serverSideTranslations(locale, ['common'])),
+    },
+  };
 }

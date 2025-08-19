@@ -1,7 +1,7 @@
 // ========== HELPER FUNCTIONS PER METODOLOGIA 3-STEP ==========
 
-function formatVerticals(verticals) {
-  if (!verticals || !verticals.top3) return 'Nessun verticale identificato';
+function formatVerticals(verticals, locale = 'it') {
+  if (!verticals || !verticals.top3) return locale === 'en' ? 'No vertical identified' : 'Nessun verticale identificato';
   
   return verticals.top3.map((v, idx) => {
     const jtds = v.properties?.JTDs || v.properties?.['Jobs to be Done'] || v.properties?.['Jobs-to-be-Done'] || 'N/A';
@@ -13,15 +13,15 @@ function formatVerticals(verticals) {
     const anonymizedTitle = `Vertical Framework #${idx + 1} (${sector})`;
     
     return `
-${idx + 1}. ${anonymizedTitle} (Relevance: ${v.relevanceScore?.toFixed(1) || 0}%)
-   • JTDs: ${jtds.substring(0, 200)}${jtds.length > 200 ? '...' : ''}
-   • Business Model: ${businessModel.substring(0, 150)}${businessModel.length > 150 ? '...' : ''}
-   • Technologies: ${tech.substring(0, 100)}${tech.length > 100 ? '...' : ''}`;
+${idx + 1}. ${anonymizedTitle} (${locale === 'en' ? 'Relevance' : 'Relevance'}: ${v.relevanceScore?.toFixed(1) || 0}%)
+   • ${locale === 'en' ? 'JTDs' : 'JTDs'}: ${jtds.substring(0, 200)}${jtds.length > 200 ? '...' : ''}
+   • ${locale === 'en' ? 'Business Model' : 'Business Model'}: ${businessModel.substring(0, 150)}${businessModel.length > 150 ? '...' : ''}
+   • ${locale === 'en' ? 'Technologies' : 'Technologies'}: ${tech.substring(0, 100)}${tech.length > 100 ? '...' : ''}`;
   }).join('\n');
 }
 
-function formatCaseHistories(cases) {
-  if (!cases || cases.length === 0) return 'Nessun case history trovato';
+function formatCaseHistories(cases, locale = 'it') {
+  if (!cases || cases.length === 0) return locale === 'en' ? 'No case history found' : 'Nessun case history trovato';
   
   return cases.slice(0, 5).map((c, idx) => {
     const description = c.properties?.Description || c.content || 'N/A';
@@ -31,17 +31,20 @@ function formatCaseHistories(cases) {
     const anonymizedTitle = `Case Study #${idx + 1} (${c.properties?.Classification || 'Innovation Case'})`;
     
     return `
-${idx + 1}. ${anonymizedTitle} (Similarity: ${c.relevanceScore?.toFixed(1)}%)
-   • Description: ${description.substring(0, 150)}...
-   • Impact: ${impact.substring(0, 100)}${impact.length > 100 ? '...' : ''}
-   • Sector: ${c.properties?.Vertical || c.properties?.Industry || 'Tech Innovation'}`;
+${idx + 1}. ${anonymizedTitle} (${locale === 'en' ? 'Similarity' : 'Similarity'}: ${c.relevanceScore?.toFixed(1)}%)
+   • ${locale === 'en' ? 'Description' : 'Description'}: ${description.substring(0, 150)}...
+   • ${locale === 'en' ? 'Impact' : 'Impact'}: ${impact.substring(0, 100)}${impact.length > 100 ? '...' : ''}
+   • ${locale === 'en' ? 'Sector' : 'Sector'}: ${c.properties?.Vertical || c.properties?.Industry || 'Tech Innovation'}`;
   }).join('\n');
 }
 
-function generateConvergenceFramework(methodology) {
+function generateConvergenceFramework(methodology, locale = 'it') {
   const insights = methodology?.step3_insights || {};
   
-  return `
+  return locale === 'en' ? `
+- Converging Technologies: ${insights.technologies?.join(', ') || 'To be identified based on patterns'}
+- Recurring Business Models: ${insights.businessModels?.join(', ') || 'To be identified from cases'}
+- Common Strategies: ${insights.strategies?.join(', ') || 'To be extracted from analysis'}` : `
 - Tecnologie Convergenti: ${insights.technologies?.join(', ') || 'Da identificare basandosi sui pattern'}
 - Business Models Ricorrenti: ${insights.businessModels?.join(', ') || 'Da identificare dai casi'}
 - Strategie Comuni: ${insights.strategies?.join(', ') || 'Da estrarre dall\'analisi'}`;
@@ -188,7 +191,7 @@ export default async function handler(req, res) {
   rateLimitMap.set(rateLimitKey, recentRequests);
 
   try {
-    const { query, notionData, filters } = req.body;
+    const { query, locale, notionData, filters } = req.body;
 
     // Prepara i dati dalla metodologia 3-step
     const methodology = notionData.methodology || {};
@@ -204,45 +207,106 @@ export default async function handler(req, res) {
       size: JSON.stringify(optimizedData).length + ' chars'
     });
     
+    // Language-specific instructions
+    const languageInstructions = locale === 'en' ? {
+      expertRole: "You are an Innovation Expert with access to a proprietary methodology based on 200+ verified case histories.",
+      analysisLabel: "ANALYSIS BASED ON NOTION DATABASE",
+      userQuery: "USER QUERY",
+      step1Label: "STEP 1: STRATEGIC VERTICALS IDENTIFIED",
+      step2Label: "STEP 2: MOST RELEVANT CASE HISTORIES", 
+      step3Label: "STEP 3: CONFIDENCE SCORE",
+      structuredOutputLabel: "INSTRUCTIONS FOR STRUCTURED OUTPUT",
+      part1Label: "PART 1: STRATEGIC INSIGHTS",
+      part2Label: "PART 2: OPERATIONAL INSIGHTS",
+      part3Label: "PART 3: VALIDATION QUESTIONS",
+      generateAnalysis: "Generate a professional structured analysis in 9 SECTIONS:",
+      strategicVerticals: "🎯 STRATEGIC VERTICALS IDENTIFIED",
+      strategicPatterns: "📊 STRATEGIC PATTERNS BY DIMENSION", 
+      caseStudies: "📚 REFERENCE CASE STUDIES",
+      operationalInsights: "Generate actionable insights for THESE 5 operational dimensions:",
+      jtbdTrends: "Jobs-to-be-Done & Market Trends",
+      competitiveCanvas: "Competitive Positioning Canvas",
+      techValidation: "Technology Adoption & Validation", 
+      processMetrics: "Process & Metrics",
+      partnershipActivation: "Partnership Activation",
+      validationQuestionsIntro: "IMPORTANT: Always generate 5 validation questions, one for each operational section (4-8).",
+      criticalRules: "CRITICAL RULES:",
+      useOnlyNotion: "✓ USE ONLY information from Notion databases",
+      maintainAnonymity: "✓ MAINTAIN complete anonymity (Case #X, Vertical #Y)", 
+      alwaysOutput: "✓ Output ALWAYS in 9 sections + validation questions",
+      actionablePoints: "✓ Each operational section must have 3-5 actionable points",
+      noScoring: "✓ DO NOT generate numerical scoring at this stage",
+      analyzing: "analyzing"
+    } : {
+      expertRole: "Sei un Innovation Expert con accesso a una metodologia proprietaria basata su 200+ case histories verificate.",
+      analysisLabel: "ANALISI BASATA SU DATABASE NOTION",
+      userQuery: "QUERY UTENTE",
+      step1Label: "STEP 1: VERTICALI STRATEGICHE IDENTIFICATE",
+      step2Label: "STEP 2: CASE HISTORIES PIÙ RILEVANTI",
+      step3Label: "STEP 3: CONFIDENCE SCORE", 
+      structuredOutputLabel: "ISTRUZIONI PER OUTPUT STRUTTURATO",
+      part1Label: "PARTE 1: STRATEGIC INSIGHTS",
+      part2Label: "PARTE 2: OPERATIONAL INSIGHTS", 
+      part3Label: "PARTE 3: DOMANDE DI VALIDAZIONE",
+      generateAnalysis: "Genera un'analisi professionale strutturata in 9 SEZIONI:",
+      strategicVerticals: "🎯 VERTICALI STRATEGICHE IDENTIFICATE",
+      strategicPatterns: "📊 PATTERN STRATEGICI PER DIMENSIONE",
+      caseStudies: "📚 CASE STUDIES DI RIFERIMENTO", 
+      operationalInsights: "Genera insights actionable per QUESTE 5 dimensioni operative:",
+      jtbdTrends: "Jobs-to-be-Done & Market Trends",
+      competitiveCanvas: "Competitive Positioning Canvas", 
+      techValidation: "Technology Adoption & Validation",
+      processMetrics: "Process & Metrics",
+      partnershipActivation: "Partnership Activation",
+      validationQuestionsIntro: "IMPORTANTE: Genera SEMPRE 5 domande di validazione, una per ogni sezione operational (4-8).",
+      criticalRules: "REGOLE CRITICHE:",
+      useOnlyNotion: "✓ USA SOLO informazioni dai database Notion",
+      maintainAnonymity: "✓ MANTIENI anonimato totale (Case #X, Vertical #Y)",
+      alwaysOutput: "✓ Output SEMPRE in 9 sezioni + validation questions", 
+      actionablePoints: "✓ Ogni sezione operational deve avere 3-5 punti actionable",
+      noScoring: "✓ NON generare scoring numerico in questa fase",
+      analyzing: "analizzando"
+    };
+
     // NUOVO PROMPT STRUTTURATO CON METODOLOGIA 3-STEP
-    const contextPrompt = `Sei un Innovation Expert con accesso a una metodologia proprietaria basata su 200+ case histories verificate.
+    const contextPrompt = `${languageInstructions.expertRole}
 
-=== ANALISI BASATA SU DATABASE NOTION (${optimizedData.totalScanned || 0} items analizzati) ===
+=== ${languageInstructions.analysisLabel} (${optimizedData.totalScanned || 0} items ${languageInstructions.analyzing}) ===
 
-QUERY UTENTE: "${query}"
+${languageInstructions.userQuery}: "${query}"
 
-=== STEP 1: VERTICALI STRATEGICHE IDENTIFICATE ===
-${formatVerticals(optimizedData.verticals)}
+=== ${languageInstructions.step1Label} ===
+${formatVerticals(optimizedData.verticals, locale)}
 
-Framework Estratto dai Verticali:
-- Jobs-to-be-Done: ${optimizedData.verticals.framework?.jtds?.slice(0, 3).join('; ') || 'In fase di identificazione'}
-- Business Models: ${optimizedData.verticals.framework?.businessModels?.slice(0, 3).join('; ') || 'In fase di analisi'}
-- Technology Patterns: ${optimizedData.verticals.framework?.technologies?.slice(0, 3).join('; ') || 'In fase di mappatura'}
-- Market Strategies: ${optimizedData.verticals.framework?.strategies?.slice(0, 3).join('; ') || 'In fase di definizione'}
+${locale === 'en' ? 'Framework Extracted from Verticals' : 'Framework Estratto dai Verticali'}:
+- Jobs-to-be-Done: ${optimizedData.verticals.framework?.jtds?.slice(0, 3).join('; ') || (locale === 'en' ? 'Being identified' : 'In fase di identificazione')}
+- Business Models: ${optimizedData.verticals.framework?.businessModels?.slice(0, 3).join('; ') || (locale === 'en' ? 'Being analyzed' : 'In fase di analisi')}
+- Technology Patterns: ${optimizedData.verticals.framework?.technologies?.slice(0, 3).join('; ') || (locale === 'en' ? 'Being mapped' : 'In fase di mappatura')}
+- Market Strategies: ${optimizedData.verticals.framework?.strategies?.slice(0, 3).join('; ') || (locale === 'en' ? 'Being defined' : 'In fase di definizione')}
 
-=== STEP 2: CASE HISTORIES PIÙ RILEVANTI ===
-${formatCaseHistories(optimizedData.cases.top5)}
+=== ${languageInstructions.step2Label} ===
+${formatCaseHistories(optimizedData.cases.top5, locale)}
 
-Pattern di Convergenza Identificati:
-${generateConvergenceFramework(methodology)}
+${locale === 'en' ? 'Identified Convergence Patterns' : 'Pattern di Convergenza Identificati'}:
+${generateConvergenceFramework(methodology, locale)}
 
-=== STEP 3: CONFIDENCE SCORE ===
-Affidabilità Analisi: ${optimizedData.confidenceScore || 'N/A'}%
-Tempo Processing: ${optimizedData.processingTime || 'N/A'}
+=== ${languageInstructions.step3Label} ===
+${locale === 'en' ? 'Analysis Reliability' : 'Affidabilità Analisi'}: ${optimizedData.confidenceScore || 'N/A'}%
+${locale === 'en' ? 'Processing Time' : 'Tempo Processing'}: ${optimizedData.processingTime || 'N/A'}
 
-=== ISTRUZIONI PER OUTPUT STRUTTURATO ===
+=== ${languageInstructions.structuredOutputLabel} ===
 
-Genera un'analisi professionale strutturata in 9 SEZIONI:
+${languageInstructions.generateAnalysis}
 
-PARTE 1: STRATEGIC INSIGHTS
+${languageInstructions.part1Label}
 
-1. 🎯 VERTICALI STRATEGICHE IDENTIFICATE
-   - TOP 3 verticali con % match
-   - Descrizione 50-80 parole per verticale
-   - Formato: "Vertical Framework #X (Sector)"
+1. ${languageInstructions.strategicVerticals}
+   - ${locale === 'en' ? 'TOP 3 verticals with % match' : 'TOP 3 verticali con % match'}
+   - ${locale === 'en' ? '50-80 words description per vertical' : 'Descrizione 50-80 parole per verticale'}
+   - ${locale === 'en' ? 'Format: "Vertical Framework #X (Sector)"' : 'Formato: "Vertical Framework #X (Sector)"'}
 
-2. 📊 PATTERN STRATEGICI PER DIMENSIONE
-   Per OGNI delle 6 dimensioni, estrai 3 insights (1 per verticale TOP 3):
+2. ${languageInstructions.strategicPatterns}
+   ${locale === 'en' ? 'For EACH of the 6 dimensions, extract 3 insights (1 per TOP 3 vertical):' : 'Per OGNI delle 6 dimensioni, estrai 3 insights (1 per verticale TOP 3):'}
    • Jobs-to-be-Done Alignment
    • Technology Adoption & Validation
    • Business Model Viability
@@ -250,60 +314,58 @@ PARTE 1: STRATEGIC INSIGHTS
    • Competing Factors Strength
    • Target Synergies Potential
 
-3. 📚 CASE STUDIES DI RIFERIMENTO
-   - TOP 3 cases ANONIMI con similarity %
-   - Formato: "Case Study #X (Sector: Y)"
-   - Key learning per ogni caso
+3. ${languageInstructions.caseStudies}
+   - ${locale === 'en' ? 'TOP 3 ANONYMOUS cases with similarity %' : 'TOP 3 cases ANONIMI con similarity %'}
+   - ${locale === 'en' ? 'Format: "Case Study #X (Sector: Y)"' : 'Formato: "Case Study #X (Sector: Y)"'}
+   - ${locale === 'en' ? 'Key learning per each case' : 'Key learning per ogni caso'}
 
-PARTE 2: OPERATIONAL INSIGHTS (Sezioni 4-8)
-Genera insights actionable per QUESTE 5 dimensioni operative:
+${languageInstructions.part2Label} (${locale === 'en' ? 'Sections 4-8' : 'Sezioni 4-8'})
+${languageInstructions.operationalInsights}
 
-4. Jobs-to-be-Done & Market Trends
-   - 3-5 bullet points su jobs specifici identificati e trend di mercato rilevanti
-   - Focus su metriche di validazione e urgenza del problema
+4. ${languageInstructions.jtbdTrends}
+   - ${locale === 'en' ? '3-5 bullet points on specific jobs identified and relevant market trends' : '3-5 bullet points su jobs specifici identificati e trend di mercato rilevanti'}
+   - ${locale === 'en' ? 'Focus on validation metrics and problem urgency' : 'Focus su metriche di validazione e urgenza del problema'}
 
-5. Competitive Positioning Canvas
-   - 3-5 bullet points su posizionamento competitivo e differenziazione
-   - Analisi dei competitor diretti e indiretti dal verticale
+5. ${languageInstructions.competitiveCanvas}
+   - ${locale === 'en' ? '3-5 bullet points on competitive positioning and differentiation' : '3-5 bullet points su posizionamento competitivo e differenziazione'}
+   - ${locale === 'en' ? 'Analysis of direct and indirect competitors from the vertical' : 'Analisi dei competitor diretti e indiretti dal verticale'}
 
-6. Technology Adoption & Validation
-   - 3-5 bullet points su stack tecnologico e approccio di validazione
-   - Best practices tecniche dal verticale identificato
+6. ${languageInstructions.techValidation}
+   - ${locale === 'en' ? '3-5 bullet points on technology stack and validation approach' : '3-5 bullet points su stack tecnologico e approccio di validazione'}
+   - ${locale === 'en' ? 'Technical best practices from the identified vertical' : 'Best practices tecniche dal verticale identificato'}
 
-7. Process & Metrics
-   - 3-5 bullet points su processi operativi e KPI chiave
-   - Metriche di successo basate su benchmark del settore
+7. ${languageInstructions.processMetrics}
+   - ${locale === 'en' ? '3-5 bullet points on operational processes and key KPIs' : '3-5 bullet points su processi operativi e KPI chiave'}
+   - ${locale === 'en' ? 'Success metrics based on industry benchmarks' : 'Metriche di successo basate su benchmark del settore'}
 
-8. Partnership Activation
-   - 3-5 bullet points su strategie di partnership e canali
-   - Tipologie di partner strategici per il verticale
+8. ${languageInstructions.partnershipActivation}
+   - ${locale === 'en' ? '3-5 bullet points on partnership strategies and channels' : '3-5 bullet points su strategie di partnership e canali'}
+   - ${locale === 'en' ? 'Types of strategic partners for the vertical' : 'Tipologie di partner strategici per il verticale'}
 
-IMPORTANTE: Ogni sezione deve contenere insights SPECIFICI estratti dalle case histories e verticali identificati, NON consigli generici.
+${locale === 'en' ? 'IMPORTANT: Each section must contain SPECIFIC insights extracted from case histories and identified verticals, NOT generic advice.' : 'IMPORTANTE: Ogni sezione deve contenere insights SPECIFICI estratti dalle case histories e verticali identificati, NON consigli generici.'}
 
-PARTE 3: DOMANDE DI VALIDAZIONE
-IMPORTANTE: Genera SEMPRE 5 domande di validazione, una per ogni sezione operational (4-8).
-Le 5 domande devono corrispondere ESATTAMENTE a:
+${languageInstructions.part3Label}
+${languageInstructions.validationQuestionsIntro}
+${locale === 'en' ? 'The 5 questions must correspond EXACTLY to:' : 'Le 5 domande devono corrispondere ESATTAMENTE a:'}
 1. Jobs-to-be-Done & Market Trends
 2. Competitive Positioning Canvas  
 3. Technology Adoption & Validation
 4. Process & Metrics
 5. Partnership Activation
 
-Formato domande:
-"[NOME SEZIONE]: [Domanda specifica basata sull'analisi]?"
+${locale === 'en' ? 'Question format:' : 'Formato domande:'}
+"[${locale === 'en' ? 'SECTION NAME' : 'NOME SEZIONE'}]: [${locale === 'en' ? 'Specific question based on analysis' : 'Domanda specifica basata sull\'analisi'}]?"
 
-Formato domande:
-"[DIMENSIONE]: [Domanda specifica basata sull'analisi]?"
-Fornisci sempre 2 opzioni di risposta chiare.
+${locale === 'en' ? 'Always provide 2 clear response options.' : 'Fornisci sempre 2 opzioni di risposta chiare.'}
 
-REGOLE CRITICHE:
-✓ USA SOLO informazioni dai database Notion
-✓ MANTIENI anonimato totale (Case #X, Vertical #Y)
-✓ Output SEMPRE in 9 sezioni + validation questions
-✓ Ogni sezione operational deve avere 3-5 punti actionable
-✓ NON generare scoring numerico in questa fase
+${languageInstructions.criticalRules}
+${languageInstructions.useOnlyNotion}
+${languageInstructions.maintainAnonymity}
+${languageInstructions.alwaysOutput}
+${languageInstructions.actionablePoints}
+${languageInstructions.noScoring}
 
-Ricorda: stai analizzando "${query}" basandoti su dati reali da ${notionData.totalScanned || 0} elementi dei database.`;
+${locale === 'en' ? 'Remember: you are analyzing' : 'Ricorda: stai analizzando'} "${query}" ${locale === 'en' ? 'based on real data from' : 'basandoti su dati reali da'} ${notionData.totalScanned || 0} ${locale === 'en' ? 'database elements' : 'elementi dei database'}.`;
 
     // Call Claude API with correct headers
     const response = await fetch("https://api.anthropic.com/v1/messages", {
