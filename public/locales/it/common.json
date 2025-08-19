@@ -1,0 +1,143 @@
+{
+  "app": {
+    "title": "Innovation Expert AI",
+    "subtitle": "Pattern Analysis",
+    "description": "Descrivi il tuo progetto innovativo per una valutazione basata su 200+ case histories e metodologia proprietaria."
+  },
+  "welcome": {
+    "message": "Ciao! Sono il tuo Innovation Expert AI. Ho accesso ai database Notion con oltre 200 case histories e best practices per valutare startup e progetti innovativi. Usa i quick prompts per iniziare o fammi una domanda specifica."
+  },
+  "navigation": {
+    "menu": "Menu",
+    "save": "Salva",
+    "load": "Carica",
+    "filter": "Filtra",
+    "search": "Ricerca"
+  },
+  "form": {
+    "placeholder": "Descrivi la tua startup o progetto innovativo per la valutazione...",
+    "send": "Invia",
+    "analyzing": "Analizzo la tua domanda...",
+    "quickPrompts": "Quick Prompts"
+  },
+  "steps": {
+    "input": "Input",
+    "analysis": "Analysis", 
+    "validation": "Validation",
+    "scoring": "Scoring"
+  },
+  "analysis": {
+    "completed": "✅ Analisi completata! Procedi con la validazione per generare lo scoring calibrato.",
+    "notAvailable": "Sezione non disponibile. Fai prima un'analisi completa.",
+    "generating": "Generando risposta...",
+    "error": "Errore nella generazione della risposta. Riprova."
+  },
+  "scoring": {
+    "title": "🎯 Innovation Score",
+    "overall": "Punteggio Complessivo"
+  },
+  "save": {
+    "conversation": "Salva Conversazione",
+    "title": "Titolo della conversazione...",
+    "button": "Salva"
+  },
+  "help": {
+    "quickPrompts": "💡 Usa i Quick Prompts nella sidebar o descrivi il tuo progetto per una valutazione completa"
+  },
+  "language": {
+    "switch": "Cambia lingua",
+    "current": "Italiano",
+    "alternative": "English",
+    "code": {
+      "it": "IT",
+      "en": "EN"
+    }
+  },
+  "quickPrompts": {
+    "evalStartup": {
+      "text": "Valuta Startup",
+      "prompt": "Analizza questa idea di startup utilizzando la metodologia di valutazione dell'innovazione dai database Notion. Fornisci un punteggio strutturato e confronta con casi simili."
+    },
+    "marketAnalysis": {
+      "text": "Analisi Mercato",
+      "prompt": "Fornisci un'analisi dettagliata del mercato per questa innovazione, inclusi trend, concorrenti e opportunità basata sulle best practice dai database Notion."
+    },
+    "bestPractices": {
+      "text": "Best Practice",
+      "prompt": "Mostrami le best practice più rilevanti per questo settore, estraendo insights dalle case histories disponibili nei database Notion."
+    },
+    "compareCases": {
+      "text": "Confronta Casi",
+      "prompt": "Confronta questo progetto con le case histories più rilevanti nei database Notion, evidenziando somiglianze, differenze e lezioni apprese."
+    }
+  },
+  "deepDive": {
+    "backToAnalysis": "Torna all'analisi completa",
+    "askMore": "Approfondisci questa sezione",
+    "examples": "💡 Esempi: \"Quali sono i rischi principali?\", \"Come posso differenziarmi?\", \"Quali metriche monitorare?\"",
+    "generating": "Analizzo la tua domanda...",
+    "placeholder": {
+      "jtbdTrends": "Chiedi approfondimenti su Jobs-to-be-Done e trend di mercato...",
+      "competitive": "Chiedi approfondimenti su posizionamento competitivo...",
+      "techValidation": "Chiedi approfondimenti su tecnologie e validazione...",
+      "processMetrics": "Chiedi approfondimenti su metriche e processi...",
+      "partnership": "Chiedi approfondimenti su strategie di partnership..."
+    },
+    "sections": {
+      "jtbdTrends": {
+        "title": "🎯 Jobs-to-be-Done & Market Trends",
+        "subtitle": "Pattern di esecuzione dalle case histories"
+      },
+      "competitive": {
+        "title": "⚔️ Competitive Positioning Canvas",
+        "subtitle": "Strategie di differenziazione & vantaggi"
+      },
+      "techValidation": {
+        "title": "🚀 Technology Adoption & Validation",
+        "subtitle": "Stack tecnologico & pattern architetturali"
+      },
+      "processMetrics": {
+        "title": "📊 Process & Metrics",
+        "subtitle": "KPI & eccellenza operativa"
+      },
+      "partnership": {
+        "title": "🤝 Partnership Activation",
+        "subtitle": "Alleanze strategiche & canali"
+      }
+    }
+  },
+  "system": {
+    "loading": {
+      "notion": "Analizzo i database Notion...",
+      "claude": "Elaboro l'analisi di innovazione...",
+      "scoring": "Generando scoring..."
+    },
+    "status": {
+      "databases": "3 Database Notion",
+      "connected": "Connesso",
+      "analyzing": "Analizzando...",
+      "completed": "Completato"
+    },
+    "errors": {
+      "analysis": "Errore nell'analisi. Riprova.",
+      "notion": "Errore nel database Notion.",
+      "network": "Errore di rete. Verifica connessione."
+    }
+  },
+  "ui": {
+    "buttons": {
+      "cancel": "Annulla",
+      "proceed": "Procedi alla Validazione",
+      "comingSoon": "🚀 Analisi interattiva nel prossimo aggiornamento"
+    },
+    "filters": {
+      "active": "Filtri Attivi",
+      "remove": "Rimuovi filtro"
+    },
+    "conversation": {
+      "analyzed": "DB analizzati",
+      "totalResults": "Totale risultati",
+      "filters": "Filtri"
+    }
+  }
+}

@@ -1,0 +1,143 @@
+{
+  "app": {
+    "title": "Innovation Expert AI",
+    "subtitle": "Pattern Analysis",
+    "description": "Describe your innovative project for evaluation based on 200+ case histories and proprietary methodology."
+  },
+  "welcome": {
+    "message": "Hello! I'm your Innovation Expert AI. I have access to Notion databases with over 200 case histories and best practices to evaluate startups and innovative projects. Use the quick prompts to get started or ask me a specific question."
+  },
+  "navigation": {
+    "menu": "Menu",
+    "save": "Save",
+    "load": "Load",
+    "filter": "Filter",
+    "search": "Search"
+  },
+  "form": {
+    "placeholder": "Describe your startup or innovative project for evaluation...",
+    "send": "Send",
+    "analyzing": "Analyzing your question...",
+    "quickPrompts": "Quick Prompts"
+  },
+  "steps": {
+    "input": "Input",
+    "analysis": "Analysis",
+    "validation": "Validation", 
+    "scoring": "Scoring"
+  },
+  "analysis": {
+    "completed": "✅ Analysis completed! Proceed with validation to generate calibrated scoring.",
+    "notAvailable": "Section not available. Please complete a full analysis first.",
+    "generating": "Generating response...",
+    "error": "Error generating response. Please try again."
+  },
+  "scoring": {
+    "title": "🎯 Innovation Score",
+    "overall": "Overall Score"
+  },
+  "save": {
+    "conversation": "Save Conversation",
+    "title": "Conversation title...",
+    "button": "Save"
+  },
+  "help": {
+    "quickPrompts": "💡 Use Quick Prompts in the sidebar or describe your project for a complete evaluation"
+  },
+  "language": {
+    "switch": "Switch language",
+    "current": "English",
+    "alternative": "Italiano",
+    "code": {
+      "it": "IT",
+      "en": "EN"
+    }
+  },
+  "quickPrompts": {
+    "evalStartup": {
+      "text": "Evaluate Startup",
+      "prompt": "Analyze this startup idea using the innovation evaluation methodology from Notion databases. Provide a structured score and compare with similar case histories."
+    },
+    "marketAnalysis": {
+      "text": "Market Analysis",
+      "prompt": "Provide a detailed market analysis for this innovation, including trends, competitors and opportunities based on best practices from Notion databases."
+    },
+    "bestPractices": {
+      "text": "Best Practices",
+      "prompt": "Show me the most relevant best practices for this sector, extracting insights from available case histories in Notion databases."
+    },
+    "compareCases": {
+      "text": "Compare Cases",
+      "prompt": "Compare this project with the most relevant case histories in Notion databases, highlighting similarities, differences and lessons learned."
+    }
+  },
+  "deepDive": {
+    "backToAnalysis": "Back to full analysis",
+    "askMore": "Ask more about this section",
+    "examples": "💡 Examples: \"What are the main risks?\", \"How can I differentiate?\", \"Which metrics to monitor?\"",
+    "generating": "Analyzing your question...",
+    "placeholder": {
+      "jtbdTrends": "Ask about Jobs-to-be-Done and market trends...",
+      "competitive": "Ask about competitive positioning...",
+      "techValidation": "Ask about technologies and validation...",
+      "processMetrics": "Ask about metrics and processes...",
+      "partnership": "Ask about partnership strategies..."
+    },
+    "sections": {
+      "jtbdTrends": {
+        "title": "🎯 Jobs-to-be-Done & Market Trends",
+        "subtitle": "Execution patterns from case histories"
+      },
+      "competitive": {
+        "title": "⚔️ Competitive Positioning Canvas",
+        "subtitle": "Differentiation strategies & moats"
+      },
+      "techValidation": {
+        "title": "🚀 Technology Adoption & Validation",
+        "subtitle": "Tech stack & architecture patterns"
+      },
+      "processMetrics": {
+        "title": "📊 Process & Metrics",
+        "subtitle": "KPIs & operational excellence"
+      },
+      "partnership": {
+        "title": "🤝 Partnership Activation",
+        "subtitle": "Strategic alliances & channels"
+      }
+    }
+  },
+  "system": {
+    "loading": {
+      "notion": "Analyzing Notion databases...",
+      "claude": "Processing innovation analysis...",
+      "scoring": "Generating scoring..."
+    },
+    "status": {
+      "databases": "3 Notion Databases",
+      "connected": "Connected",
+      "analyzing": "Analyzing...",
+      "completed": "Completed"
+    },
+    "errors": {
+      "analysis": "Analysis error. Please retry.",
+      "notion": "Notion database error.",
+      "network": "Network error. Check connection."
+    }
+  },
+  "ui": {
+    "buttons": {
+      "cancel": "Cancel",
+      "proceed": "Proceed to Validation",
+      "comingSoon": "🚀 Interactive analysis coming in next update"
+    },
+    "filters": {
+      "active": "Active Filters",
+      "remove": "Remove filter"
+    },
+    "conversation": {
+      "analyzed": "DB analyzed",
+      "totalResults": "Total results",
+      "filters": "Filters"
+    }
+  }
+}
