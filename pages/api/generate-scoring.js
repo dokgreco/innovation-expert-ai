@@ -1,4 +1,49 @@
+// 🔒 F.2.1 Security: Rate Limiting Storage
+const rateLimitMap = new Map();
+
 export default async function handler(req, res) {
+  // 🔒 F.2.1 Security: CORS Headers + Domain Restriction
+  const allowedOrigins = process.env.NODE_ENV === 'development' 
+    ? ['http://localhost:3000', 'http://localhost:3001']
+    : ['https://innovation-expert-ai-sana.vercel.app'];
+
+  const origin = req.headers.origin;
+  
+  if (allowedOrigins.includes(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+  }
+  
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.setHeader('Access-Control-Max-Age', '86400');
+  
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
+
+  // 🔒 F.2.1 Security: Rate Limiting
+  const clientIP = req.headers['x-forwarded-for'] || req.connection.remoteAddress || 'unknown';
+  const rateLimitKey = `rate_limit_${clientIP}`;
+  const maxRequests = process.env.NODE_ENV === 'development' ? 200 : 100;
+  const timeWindow = 60 * 60 * 1000;
+  
+  const now = Date.now();
+  const clientRequests = rateLimitMap.get(rateLimitKey) || [];
+  const recentRequests = clientRequests.filter(time => now - time < timeWindow);
+  
+  if (recentRequests.length >= maxRequests) {
+    return res.status(429).json({ 
+      error: 'Rate limit exceeded',
+      retryAfter: Math.ceil((recentRequests[0] + timeWindow - now) / 1000)
+    });
+  }
+  
+  recentRequests.push(now);
+  rateLimitMap.set(rateLimitKey, recentRequests);
   
   // Helper functions per analisi testo
   function analyzeTextAnswer(answer, dimension) {
