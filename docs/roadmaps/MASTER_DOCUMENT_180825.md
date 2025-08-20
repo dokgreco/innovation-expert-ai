@@ -113,25 +113,36 @@ Deep Dive Q&A [5 sezioni interattive]
 
 ### 📅 Timeline: 2 Settimane per Production
 
-#### **WEEK 1: Security Implementation**
+#### **PHASE 1: UI Improvements & UX (3.5 ore) - 🎨 PRIORITÀ IMMEDIATA**
 
-##### F.2.1 Security Minimal (1 ora) - ✅ COMPLETATO 🔒
-**Obiettivo:** Protezione base SENZA obfuscation
-- ✅ Environment variables verification
-- ✅ CORS headers restrictive
-- ✅ Basic rate limiting (100 req/hour)
-- ✅ Domain restriction (solo vercel.app)
-- ✅ **NO obfuscation implementato** - Translation Shield protetto
+##### UI Critical Fixes (1.9 ore) - 🚨 ALTA PRIORITÀ
+**Obiettivo:** Risolvere problemi UX critici per user testing
+- [ ] **Deep-dive Navigation Fix** (45 min) - Navigazione sempre attiva post Scoring/Validation
+- [ ] **Deep-dive UI Confusion** (30 min) - Hide main text entry in deep-dive mode
+- [ ] **Deep-dive Layout** (40 min) - Full-width + proper markdown rendering
 
-##### F.2.1.5 Security Intermediate (2.5 ore) - 📋 PIANIFICATO 🛡️
-**Obiettivo:** Protezione IP critica con minimal risk
+##### UI Polish & Content (0.8 ore) - ✨ MEDIA PRIORITÀ  
+**Obiettivo:** Professional polish per Alpha launch
+- [ ] **Alpha Version Notice** (15 min) - Header centrale "Versione Alpha"
+- [ ] **Case Studies Copy** (10 min) - ">300 case histories reali e selezionate"  
+- [ ] **Header Subtitle Sexy** (20 min) - "Metodologia proprietaria su basi conoscenza curate"
+- [ ] **Remove Save Button** (5 min) - Cleanup pulsante non funzionante
+
+##### Instructions Page (1 ora) - 📚 NUOVA FEATURE
+**Obiettivo:** User onboarding e best practices
+- [ ] **Pagina Istruzioni** (60 min) - Metodologia + guida utilizzo + link sidebar
+
+#### **PHASE 2: Security Implementation (2.5 ore) - 🛡️ POST UI-READY**
+
+##### F.2.1.5 Security Intermediate - 🔒 IP PROTECTION
+**Obiettivo:** Protezione IP critica con zero breaking changes
 - [ ] Business logic separation (scoring algorithms → moduli protetti)
 - [ ] Environment-based protection (weights, domains, thresholds)
 - [ ] Selective obfuscation (metodologia proprietaria nascosta)
 - [ ] Zero breaking changes (Translation Shield + i18n intatti)
 - 🛡️ **Backup disponibile:** `backup-pre-security-intermediate`
 
-##### F.2.2 Security Full (5 ore) - 🔄 OPZIONALE 🔐
+##### F.2.2 Security Full (5 ore) - 🔄 OPZIONALE POST-LAUNCH
 **Obiettivo:** Protezione IP completa (solo se necessario POST user testing)
 - [ ] Serverless migration graduale
 - [ ] Security headers completi (CSP, HSTS)
@@ -355,32 +366,39 @@ git checkout -b emergency-recovery
 
 ## 🎯 NEXT IMMEDIATE ACTION
 
-### Prossima Sessione: F.2.1.5 Security Intermediate (2.5 ore)
+### Prossima Sessione: PHASE 1 - UI Improvements (3.5 ore)
 
-**Obiettivo:** Protezione IP critica senza breaking changes
-**Strategia:** Obfuscation selettiva + Environment protection
-**Risk Level:** LOW (backup disponibile)
+**STRATEGIA CAMBIATA:** UI-First → Security-Second per ottimizzare user testing
+
+**Obiettivo:** Sistema user-ready con UX professionale
+**Priority:** Critical UX fixes + Alpha polish + Instructions page
+**Risk Level:** ZERO (solo UI changes, zero API impact)
 
 **Setup iniziale:**
 ```bash
 cd C:\Users\dokgr\Dropbox\MVP_Claude\innovation-expert-ai
-git checkout -b feature/security-intermediate  
-# Backup già disponibile: backup-pre-security-intermediate
+git checkout -b feature/ui-improvements  
+# Backup disponibile: backup-pre-security-intermediate
 ```
 
 **Contesto da fornire:**
 ```
-Continuo Innovation Expert AI - Task F.2.1.5 Security Intermediate
+Continuo Innovation Expert AI - PHASE 1: UI Improvements
 SITUAZIONE:
-- Sistema 100% completo e operativo ✅
-- F.1 Multi-language + F.2.1 Security Minimal COMPLETATI ✅  
-- Backup strategico creato e verificato ✅
-- Obiettivo: Protezione IP con minimal risk (2.5 ore)
-TASK:
-1. Business logic separation (scoring algorithms)
-2. Environment-based protection (weights, domains)
-3. Selective obfuscation (methodology protection)
-PROTEZIONE: Translation Shield attivo, Recovery <2min
+- Sistema 100% completo e operativo (F.1 + F.2.1) ✅
+- Roadmap aggiornata: UI-First strategy ✅
+- 8 UI improvements identificati e prioritizzati ✅
+- Backup strategico disponibile ✅
+
+OBIETTIVO: User-ready system per testing immediato
+
+TASK PRIORITARI (3.5 ore totali):
+1. CRITICAL: Deep-dive navigation + layout fixes (1.9h)
+2. POLISH: Alpha notice + copy improvements (0.8h)  
+3. FEATURE: Instructions page + sidebar link (1h)
+
+POST-UI: F.2.1.5 Security Intermediate (2.5h)
+ZERO-RISK: Solo frontend changes, API intatte
 ```
 
 ---
