@@ -1,9 +1,9 @@
 # 🚀 INNOVATION EXPERT AI - KNOWLEDGE BASE MASTER DOCUMENT
 **Data Consolidamento:** 20 Agosto 2025  
-**Versione Sistema:** v1.2  
-**Completamento:** 100% (Core) + Advanced Scoring + Re-submission + Multilingual System  
+**Versione Sistema:** v1.2.1  
+**Completamento:** 100% (Core) + Advanced Scoring + Re-submission + Multilingual System + Notion Query Optimized  
 **Branch Production:** main  
-**Status:** PRODUCTION READY + COMPLETE MULTILINGUAL SUPPORT DEPLOYED
+**Status:** PRODUCTION READY + COMPLETE MULTILINGUAL SUPPORT + CRITICAL PERFORMANCE FIXES DEPLOYED
 
 ---
 
@@ -18,6 +18,7 @@
 - **NUOVO: Advanced Scoring System IMPLEMENTATO**: Algoritmo 4-level scoring ✅
 - **NUOVO: Re-submission Flow IMPLEMENTATO**: Sistema iterativo con delta tracking ✅
 - **NUOVO v1.2: Complete Multilingual System**: Supporto completo IT/EN per tutti i componenti ✅
+- **NUOVO v1.2.1: Critical Notion Query Optimization**: Performance 13x + DB-specific properties + acceptance criteria fix ✅
 - **Performance eccellenti**: 19s prima query, 2s con cache
 - **Production URLs attive**: 
   - IT: https://innovation-expert-ai-sana.vercel.app ✅
