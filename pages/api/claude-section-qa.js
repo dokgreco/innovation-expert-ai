@@ -46,7 +46,7 @@ export default async function handler(req, res) {
   rateLimitMap.set(rateLimitKey, recentRequests);
 
   try {
-    const { section, question, analysisContext } = req.body;
+    const { section, question, analysisContext, locale = 'it' } = req.body;
 
     // Log per debug
     console.log('🎯 Section Q&A Request:', {
@@ -62,13 +62,32 @@ export default async function handler(req, res) {
       });
     }
 
-    // V2 Section prompts aligned with 8-section structure
+    // V2 Section prompts aligned with 8-section structure - Multilingual
+const isEnglish = locale === 'en';
 const sectionPrompts = {
-  'jtbd-trends': `Sei un Innovation Expert che analizza Jobs-to-be-Done & Market Trends.
+  'jtbd-trends': isEnglish ? 
+    `You are an Innovation Expert analyzing Jobs-to-be-Done & Market Trends.
+
+ANALYSIS CONTEXT V2:
+- Vertical: ${analysisContext.vertical || 'Not specified'}  
+- JTBD Patterns: ${analysisContext.patterns?.jtbd || 'Patterns to identify'}
+- Market Trends from case studies: ${analysisContext.cases?.length || 0} cases analyzed
+
+User asked: "${question}"
+
+STRUCTURE THE RESPONSE:
+1. Specific reference to JTBD of identified vertical
+2. Relevant market trends (with % data)
+3. Execution timeline: 0-3, 3-6, 6-12 months
+4. JTBD validation KPIs (concrete metrics)
+5. Immediate next step to validate main JTBD
+
+Keep response <150 words, ultra-specific for context.` :
+    `Sei un Innovation Expert che analizza Jobs-to-be-Done & Market Trends.
 
 CONTESTO ANALISI V2:
 - Verticale: ${analysisContext.vertical || 'Non specificato'}
-- Pattern JTBD: ${analysisContext.patterns?.jtbd || 'Pattern da identificare'}
+- Pattern JTBD: ${analysisContext.patterns?.jtbd || 'Pattern da identificare'}  
 - Market Trends dai case studies: ${analysisContext.cases?.length || 0} casi analizzati
 
 L'utente ha chiesto: "${question}"
@@ -82,7 +101,25 @@ STRUTTURA LA RISPOSTA:
 
 Mantieni risposta <150 parole, ultra-specifica per il contesto.`,
 
-  'competitive': `Sei un Innovation Expert che analizza il Competitive Positioning Canvas.
+  'competitive': isEnglish ?
+    `You are an Innovation Expert analyzing the Competitive Positioning Canvas.
+
+ANALYSIS CONTEXT V2:
+- Vertical: ${analysisContext.vertical || 'Not specified'}
+- Identified Competing Factors: ${analysisContext.patterns?.competitive || 'To be defined'}
+- Positioning vs case studies: TOP 3 differentiators
+
+User asked: "${question}"
+
+STRUCTURE THE RESPONSE:
+1. Vertical competitive map (leaders, challengers, niche)
+2. Key identified differentiators (2-3 core)
+3. Moat building strategy based on similar cases
+4. Main competitive risks (fast-followers, incumbents)
+5. Priority action to defend position
+
+Focus on actionable insights, not theory. Max 150 words.` :
+    `Sei un Innovation Expert che analizza il Competitive Positioning Canvas.
 
 CONTESTO ANALISI V2:
 - Verticale: ${analysisContext.vertical || 'Non specificato'}
@@ -100,7 +137,25 @@ STRUTTURA LA RISPOSTA:
 
 Focus su insights actionable, non teoria. Max 150 parole.`,
 
-  'tech-validation': `Sei un Innovation Expert che analizza Technology Adoption & Validation.
+  'tech-validation': isEnglish ?
+    `You are an Innovation Expert analyzing Technology Adoption & Validation.
+
+ANALYSIS CONTEXT V2:
+- Vertical Tech Stack: ${analysisContext.patterns?.technologies || 'To be defined'}
+- Success architectures: ${analysisContext.techPatterns || 'API-first, Cloud-native'}
+- Validation approach from case studies
+
+User asked: "${question}"
+
+STRUCTURE THE RESPONSE:
+1. Recommended tech stack for the vertical
+2. MVP vs Scale architecture (clear trade-offs)
+3. Technical debt to avoid (lessons from case studies)
+4. Target technical metrics: uptime, response time, scalability
+5. Most critical immediate tech decision
+
+Respond with concrete choices, not generic options. Max 150 words.` :
+    `Sei un Innovation Expert che analizza Technology Adoption & Validation.
 
 CONTESTO ANALISI V2:
 - Tech Stack verticale: ${analysisContext.patterns?.technologies || 'Da definire'}
@@ -118,7 +173,25 @@ STRUTTURA LA RISPOSTA:
 
 Rispondi con scelte concrete, non opzioni generiche. Max 150 parole.`,
 
-  'process-metrics': `Sei un Innovation Expert che analizza Process & Metrics (KPIs).
+  'process-metrics': isEnglish ?
+    `You are an Innovation Expert analyzing Process & Metrics (KPIs).
+
+ANALYSIS CONTEXT V2:
+- Vertical critical KPIs: ${analysisContext.patterns?.kpis || 'To be identified'}
+- Benchmarks from TOP case studies
+- Process excellence patterns
+
+User asked: "${question}"
+
+STRUCTURE THE RESPONSE:
+1. 3 primary KPIs with numerical targets (based on benchmarks)
+2. Critical operational processes for the vertical
+3. Identified automation opportunities
+4. Early warning metrics (what to monitor)
+5. Priority dashboard setup (first 30 days)
+
+Provide specific numbers and percentages. Max 150 words.` :
+    `Sei un Innovation Expert che analizza Process & Metrics (KPIs).
 
 CONTESTO ANALISI V2:
 - KPI critici del verticale: ${analysisContext.patterns?.kpis || 'Da identificare'}
@@ -136,7 +209,25 @@ STRUTTURA LA RISPOSTA:
 
 Fornisci numeri e percentuali specifici. Max 150 parole.`,
 
-  'partnership': `Sei un Innovation Expert che analizza Partnership Activation.
+  'partnership': isEnglish ?
+    `You are an Innovation Expert analyzing Partnership Activation.
+
+ANALYSIS CONTEXT V2:
+- Vertical partner ecosystem: ${analysisContext.patterns?.partnerships || 'To be mapped'}
+- Synergies identified from case studies
+- Successful partnership models
+
+User asked: "${question}"
+
+STRUCTURE THE RESPONSE:
+1. Critical partner types for the vertical (tech, channel, strategic)
+2. Priority partnerships (ordered by impact)
+3. Value proposition for partners (what you offer/receive)
+4. Typical sector deal structure
+5. First partnership to activate (next 60 days)
+
+Be specific about company types, not generic. Max 150 words.` :
+    `Sei un Innovation Expert che analizza Partnership Activation.
 
 CONTESTO ANALISI V2:
 - Partner ecosystem del verticale: ${analysisContext.patterns?.partnerships || 'Da mappare'}

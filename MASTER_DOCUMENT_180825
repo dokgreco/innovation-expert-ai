@@ -1,9 +1,9 @@
 # 🚀 INNOVATION EXPERT AI - KNOWLEDGE BASE MASTER DOCUMENT
-**Data Consolidamento:** 18 Agosto 2025  
-**Versione Sistema:** v0.95  
-**Completamento:** 98%  
+**Data Consolidamento:** 20 Agosto 2025  
+**Versione Sistema:** v0.96  
+**Completamento:** 97%  
 **Branch Production:** main  
-**Status:** PRE-PRODUCTION READY
+**Status:** DEEP-DIVE COMPLETE + ValidationQuestions Debug In Progress
 
 ---
 
@@ -12,10 +12,12 @@
 **Innovation Expert AI** è un sistema di consulenza digitale per la valutazione di startup e progetti innovativi. Utilizza una metodologia proprietaria 3-step con 200+ case histories anonimizzate, integrate con Claude AI e 3 database Notion.
 
 ### Stato Attuale
-- **Sistema funzionante al 98%** in produzione su Vercel
+- **Sistema funzionante al 97%** in produzione su Vercel
 - **Performance ottimizzate**: 19s prima query, instant con cache
 - **Recovery post-i18n completato** con successo
-- **Mancano solo**: Security layers (6 ore totali)
+- **Deep-Dive completato al 100%** - multilingual + markdown rendering
+- **ValidationQuestions debug in corso**: 4 problemi identificati
+- **Mancano**: ValidationQuestions fix (2 ore) + Security layers (6 ore)
 
 ---
 
@@ -43,6 +45,8 @@
 | 6 | V2 alignment + Polish | ✅ Complete |
 | F.3 | Performance optimization | ✅ Complete |
 | F.1 | i18n (poi recovery) | ✅ Recovered |
+| **SESSION 20/08** | **Deep-Dive multilingual** | ✅ **COMPLETE** |
+| **SESSION 20/08** | **ValidationQuestions debug** | 🔄 **IN PROGRESS** |
 
 ---
 
@@ -103,9 +107,19 @@ Deep Dive Q&A [5 sezioni interattive]
 
 ---
 
-## 🎯 ROADMAP V7.0 - TASK RIMANENTI (2%)
+## 🎯 ROADMAP V7.0 - TASK RIMANENTI (3%)
 
 ### 📅 Timeline: 2 Settimane per Production
+
+#### **IMMEDIATE PRIORITY: ValidationQuestions Debug (2 ore)**
+
+##### 🔧 ValidationQuestions Critical Issues - IN PROGRESS
+**Status:** Debug session ongoing, ready for next session handoff
+- [ ] Fix validation questions translation (content still in original language)
+- [ ] Fix word counter translation template interpolation 
+- [ ] Fix visual feedback state persistence (green validation borders)
+- [ ] Fix button clickable logic (isFormValid never returns true)
+**See:** `docs/progress-reports/PSReport_ValidationQuestions_Debug_200825.md`
 
 #### **WEEK 1: Security Implementation**
 
@@ -298,29 +312,35 @@ eb14a8f - Fix: Ranking system implementation
 
 ## 🎯 NEXT IMMEDIATE ACTION
 
-### Prossima Sessione: F.2.1 Security Minimal (1 ora)
+### Prossima Sessione: ValidationQuestions Debug Completion (2 ore)
 
 **Setup iniziale:**
 ```bash
 cd C:\Users\dokgr\Dropbox\MVP_Claude\innovation-expert-ai
-git checkout -b feature/security-minimal
+# Server già running, no branch changes needed
 npm run dev
+# Browser: http://localhost:3000 + DevTools Console
 ```
 
 **Contesto da fornire:**
 ```
-Continuo Innovation Expert AI - Task F.2.1 Security Minimal
+Continuo Innovation Expert AI - ValidationQuestions Debug Session
 SITUAZIONE:
-- Sistema 98% completo e funzionante
-- Branch: feature/security-minimal (nuovo)
-- Recovery e performance COMPLETATI
-- Obiettivo: Security base senza obfuscation (1 ora)
-TASK:
-1. CORS headers implementation
-2. Basic rate limiting
-3. Domain restriction
-NO obfuscation, mantenere compatibilità i18n futura
+- Deep-Dive functionality 100% complete (multilingual + markdown)
+- ValidationQuestions component partially working but 4 critical issues
+- Debug logging implemented and ready for analysis
+- Translation structure exists but implementation incomplete
+CURRENT ISSUES:
+1. Validation questions content not translated (API vs translation strategy)
+2. Word counter shows literal "{count} words" instead of numbers
+3. Green validation feedback lost between textarea switches  
+4. "Generate Calibrated Scoring" button never becomes clickable
+FILES FOCUS: components/ValidationQuestions.js + public/locales/*/common.json
+DEBUG: Console logs active, check browser DevTools
 ```
+
+### Alternative Session: F.2.1 Security Minimal (1 ora)
+**Se ValidationQuestions completato, proseguire con security implementation**
 
 ---
 
@@ -334,7 +354,7 @@ NO obfuscation, mantenere compatibilità i18n futura
 
 ---
 
-**Documento Consolidato:** 18 Agosto 2025  
-**Prossimo Update:** Post F.2.1 Security Minimal  
+**Documento Consolidato:** 20 Agosto 2025  
+**Prossimo Update:** Post ValidationQuestions Debug Completion  
 **Maintainer:** Innovation Expert Team  
-**Versione KB:** 2.0 - Post Recovery Consolidation
+**Versione KB:** 2.1 - Deep-Dive Complete + ValidationQuestions Debug Ready

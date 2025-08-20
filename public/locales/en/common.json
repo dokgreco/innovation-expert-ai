@@ -2,7 +2,10 @@
   "app": {
     "title": "Innovation Expert AI",
     "subtitle": "Pattern Analysis",
-    "description": "Describe your innovative project for evaluation based on 200+ case histories and proprietary methodology."
+    "description": "Describe your innovative project for evaluation based on 200+ case histories and proprietary methodology.",
+    "alphaVersion": "Alpha Version",
+    "methodology": "Proprietary methodology on curated knowledge bases",
+    "caseStudies": ">300 real and selected case histories"
   },
   "welcome": {
     "message": "Hello! I'm your Innovation Expert AI. I have access to Notion databases with over 200 case histories and best practices to evaluate startups and innovative projects. Use the quick prompts to get started or ask me a specific question."
@@ -12,7 +15,9 @@
     "save": "Save",
     "load": "Load",
     "filter": "Filter",
-    "search": "Search"
+    "search": "Search",
+    "instructions": "📖 Instructions & Methodology",
+    "instructionsSubtitle": "Complete system usage guide"
   },
   "form": {
     "placeholder": "Describe your startup or innovative project for evaluation...",
@@ -139,5 +144,102 @@
       "totalResults": "Total results",
       "filters": "Filters"
     }
+  },
+  "validation": {
+    "title": "Validation for Calibrated Assessment",
+    "description": "Describe your approach for each strategic dimension.",
+    "detailedTip": "💡 Detailed responses (minimum 20 words) generate more accurate scoring",
+    "totalWords": "Total: {count} words",
+    "placeholder": "Describe your approach in detail...",
+    "wordCount": "{count} words",
+    "minWords": "Minimum 20 words",
+    "generateScoring": "Generate Calibrated Scoring",
+    "minWordsError": "Minimum 20 words required (current: {count})"
+  },
+  "instructions": {
+    "backToApp": "Back to Application",
+    "title": "Instructions and Methodology", 
+    "subtitle": "Complete guide to using Innovation Expert AI and understanding our proprietary methodology",
+    "methodology": {
+      "title": "Proprietary Methodology",
+      "description": "Innovation Expert AI uses a proprietary methodology based on over 300 real and selected case histories, analyzed and curated by our team of experts. The system combines:",
+      "features": [
+        "Advanced Pattern Recognition: Identification of convergent strategic patterns through analysis of successful startups and innovations",
+        "Vertical-Specific Insights: Focused analysis by strategic vertical with sector benchmarks",
+        "Multi-Stage Validation: Structured validation process with questions calibrated on real data",
+        "Calibrated Scoring: Scoring system based on metrics validated by historical case studies"
+      ]
+    },
+    "howItWorks": {
+      "title": "How the System Works",
+      "steps": [
+        {
+          "title": "Input & Query",
+          "description": "Describe your project, startup or innovation in natural language"
+        },
+        {
+          "title": "Intelligent Analysis",
+          "description": "The system analyzes your input against the database of 300+ case studies"
+        },
+        {
+          "title": "Structured Validation", 
+          "description": "Answer calibrated questions to validate the analysis"
+        },
+        {
+          "title": "Final Scoring",
+          "description": "Receive a calibrated score and actionable insights"
+        }
+      ]
+    },
+    "deepDiveSections": {
+      "title": "Deep Dive Sections",
+      "description": "After the initial analysis, you can dive deeper into specific aspects through Deep Dive sections:",
+      "jtbd": "Analysis of fundamental needs and market trends",
+      "competitive": "Competitive positioning and differentiation",
+      "tech": "Technology validation and adoption pathway",
+      "metrics": "KPIs, metrics and operational processes",
+      "partnership": "Partnership strategies and ecosystem"
+    },
+    "quickPrompts": {
+      "title": "Suggested Quick Prompts",
+      "description": "Use these prompts to get specific and targeted analysis:",
+      "startup": "Evaluate this startup idea: [describe your idea]",
+      "market": "Analyze the market for [sector/product] and identify opportunities",
+      "practices": "Show me the best practices for [specific area] based on case studies",
+      "compare": "Compare my idea with similar case studies in the database"
+    },
+    "database": {
+      "title": "Knowledge Database",
+      "description": "Our proprietary database includes:",
+      "types": "Case Study Types",
+      "sectors": "Covered Sectors"
+    },
+    "tips": {
+      "title": "Tips for Optimal Results",
+      "items": [
+        {
+          "title": "Be specific",
+          "description": "Provide concrete details about your project, target market, and value proposition"
+        },
+        {
+          "title": "Sector context",
+          "description": "Specify the sector or vertical reference for more targeted analysis"
+        },
+        {
+          "title": "Development phase",
+          "description": "Indicate if you are in ideation, MVP, or growth phase for calibrated advice"
+        },
+        {
+          "title": "Accurate validation",
+          "description": "Answer validation questions honestly for reliable scoring"
+        },
+        {
+          "title": "Explore Deep Dive",
+          "description": "Use specific sections for targeted insights"
+        }
+      ]
+    },
+    "footer": "Innovation Expert AI - Proprietary methodology on curated knowledge bases",
+    "alphaNote": "Alpha Version - System under continuous improvement"
   }
 }

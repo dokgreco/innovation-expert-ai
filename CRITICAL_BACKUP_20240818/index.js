@@ -1,14 +1,11 @@
 import React, { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import { 
   Send, Bot, User, Database, Brain, Lightbulb, TrendingUp, 
-  Filter, History, Star, Search, FileText,
+  Filter, Save, History, Star, Search, FileText,
   BarChart3, Target, Zap, Building2, Rocket, ChevronRight,
   Clock, Bookmark, X, Plus, Edit3, Check, Loader, Menu,
   Award, CheckCircle, Users, MessageCircle
 } from 'lucide-react';
-import { useTranslation } from 'next-i18next';
-import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
-import { useRouter } from 'next/router';
 import AnalysisDisplay from '../components/StructuredAnalysisDisplay';
 import ValidationQuestions from '../components/ValidationQuestions';
 
@@ -18,56 +15,48 @@ const formatMarkdownText = (text) => {
   
   // Prima passa: sostituisci i pattern Markdown con HTML
   let formatted = text
-    // Headers con emoji/numeri - specifici per deep dive
-    .replace(/^##\s+(.+)$/gm, '<h2 class="font-bold text-lg mt-6 mb-4 text-indigo-800 border-b border-indigo-200 pb-2">$1</h2>')
-    .replace(/^###\s+(.+)$/gm, '<h3 class="font-bold text-base mt-4 mb-3 text-indigo-900">$1</h3>')
+    // Headers - gestisci prima quelli con emoji e senza
+    .replace(/^###\s+(.+)$/gm, '<h3 class="font-bold text-base mt-4 mb-2 text-indigo-900">$1</h3>')
+    .replace(/^##\s+(.+)$/gm, '<h2 class="font-bold text-lg mt-5 mb-3 text-indigo-800 border-b border-indigo-200 pb-2">$1</h2>')
     .replace(/^#\s+(.+)$/gm, '<h1 class="font-bold text-xl mt-6 mb-4 text-indigo-700">$1</h1>')
     
-    // Pattern numerati (es: "1. JTBD Verticale IoT Platform:")
-    .replace(/^\*\*(\d+)\.\s+([^*]+):\*\*/gm, '<div class="mt-5 mb-3"><h4 class="font-bold text-indigo-800 text-base">$1. $2</h4></div>')
-    
-    // Bold con : all'interno di liste (es: "**Core Job**: "Help me...")  
-    .replace(/\*\*([^*:]+):\*\*\s*"([^"]+)"/g, '<div class="ml-4 mb-2"><span class="font-semibold text-gray-800">$1:</span> <em class="text-gray-700">"$2"</em></div>')
-    .replace(/\*\*([^*:]+):\*\*\s*(.+)/g, '<div class="ml-4 mb-2"><span class="font-semibold text-gray-800">$1:</span> <span class="text-gray-700">$2</span></div>')
+    // Bold text con : (tipo "KEY POINT: testo")
+    .replace(/\*\*([^:]+):\*\*\s*(.+)$/gm, 
+      '<div class="my-3"><span class="font-semibold text-indigo-700 inline-block min-w-[140px]">$1:</span> <span class="text-gray-700">$2</span></div>')
     
     // Bold text normale
     .replace(/\*\*([^*]+)\*\*/g, '<strong class="font-semibold text-gray-900">$1</strong>')
     
-    // Liste con - (sub-liste)
-    .replace(/^-\s+(.+)$/gm, '<li class="ml-8 mb-2 text-gray-700 list-disc">$1</li>')
+    // Liste puntate con - all'inizio della riga
+    .replace(/^-\s+(.+)$/gm, '<li class="ml-6 mb-2 text-gray-700">• $1</li>')
     
-    // Timeline format specifico
-    .replace(/^\*\*(\d+-\d+\s+\w+)\*\*:\s*(.+)$/gm, 
-      '<div class="flex gap-3 my-3 ml-4"><span class="font-bold text-indigo-600 bg-indigo-50 px-2 py-1 rounded text-sm">$1</span><span class="text-gray-700 flex-1">$2</span></div>')
+    // Liste numerate (es: "1. testo")
+    .replace(/^(\d+)\.\s+(.+)$/gm, 
+      '<div class="flex gap-3 my-3 ml-4"><span class="font-bold text-indigo-600 flex-shrink-0">$1.</span><span class="text-gray-700 flex-1">$2</span></div>')
     
-    // Gestione migliorata dei line breaks
-    .replace(/\n\n+/g, '|||PARAGRAPH|||') // Doppi/multipli a capo = nuovi paragrafi
-    .replace(/\n(?=\d+\.)/g, '|||PARAGRAPH|||') // A capo prima di numeri = nuovo paragrafo
-    .replace(/\n(?=\*\*)/g, '|||PARAGRAPH|||') // A capo prima di bold = nuovo paragrafo  
-    .replace(/\n(?=-\s)/g, ' ') // A capo prima di lista = spazio
-    .replace(/\n/g, '<br>') // Altri a capo = line break
-    .replace(/\|\|\|PARAGRAPH\|\|\|/g, '</div><div class="mb-4">');
+    // Paragrafi (doppio a capo)
+    .replace(/\n\n/g, '</p><p class="mb-3 text-gray-700">');
   
   // Seconda passa: sistema le liste
   formatted = formatted
     // Raggruppa i <li> consecutivi in <ul>
     .replace(/(<li[^>]*>.*?<\/li>\s*)+/g, (match) => {
-      return '<ul class="space-y-1 my-3">' + match + '</ul>';
+      return '<ul class="list-none space-y-2 my-3">' + match + '</ul>';
     });
   
-  // Terza passa: wrappa tutto in un div principale
-  if (!formatted.startsWith('<div') && !formatted.startsWith('<h')) {
-    formatted = '<div class="mb-4">' + formatted;
+  // Terza passa: pulisci e wrappa
+  if (!formatted.startsWith('<')) {
+    formatted = '<p class="mb-3 text-gray-700">' + formatted;
   }
-  if (!formatted.endsWith('</div>') && !formatted.endsWith('>')) {
-    formatted = formatted + '</div>';
+  if (!formatted.endsWith('>')) {
+    formatted = formatted + '</p>';
   }
   
-  // Fix finali: pulisci e sistema
+  // Fix: rimuovi </p><p> vuoti
   formatted = formatted
-    .replace(/<div class="mb-4">\s*<\/div>/g, '')
-    .replace(/<div class="mb-4">\s*<h/g, '<h')
-    .replace(/<\/h(\d)>\s*<\/div>/g, '</h$1>');
+    .replace(/<p[^>]*>\s*<\/p>/g, '')
+    .replace(/<p class="mb-3 text-gray-700"><h/g, '<h')
+    .replace(/<\/h(\d)><\/p>/g, '</h$1>');
   
   return formatted;
 };
@@ -84,32 +73,25 @@ const steps = [
 // Commentato per future implementazioni
 // const DeepDiveSection = lazy(() => import('../components/DeepDiveSection'));
 export default function InnovationExpertAI() {
-  const { t, ready } = useTranslation('common');
-  const router = useRouter();
-  
-  const [messages, setMessages] = useState([]);
-  
-  // Set initial message after translations are loaded
-  useEffect(() => {
-    if (messages.length === 0 && ready && t('welcome.message')) {
-      setMessages([
-        { 
-          id: '1',
-          role: 'assistant', 
-          content: t('welcome.message'),
-          timestamp: new Date(),
-          category: 'welcome'
-        }
-      ]);
+  const [messages, setMessages] = useState([
+    { 
+      id: '1',
+      role: 'assistant', 
+      content: 'Ciao! Sono il tuo Innovation Expert AI. Ho accesso ai database Notion con oltre 200 case histories e best practices per valutare startup e progetti innovativi. Usa i quick prompts per iniziare o fammi una domanda specifica.',
+      timestamp: new Date(),
+      category: 'welcome'
     }
-  }, [t, ready, messages.length]);
+  ]);
   
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [selectedFilters, setSelectedFilters] = useState([]);
+  const [savedConversations, setSavedConversations] = useState([]);
   const [promptHistory, setPromptHistory] = useState([]);
+  const [showSaveDialog, setShowSaveDialog] = useState(false);
+  const [conversationTitle, setConversationTitle] = useState('');
   const [notionConnected, setNotionConnected] = useState(true);
   
   const messagesEndRef = useRef(null);
@@ -125,69 +107,69 @@ const [scoringData, setScoringData] = useState(null);
 const [sectionConversations, setSectionConversations] = useState({});
 const [sectionInputs, setSectionInputs] = useState({});
 const [sectionLoading, setSectionLoading] = useState({});
-  // Quick Prompts essenziali con traduzioni
+  // Quick Prompts essenziali con testi completi
   const quickPrompts = [
     {
       id: 'eval-startup',
-      text: t('quickPrompts.evalStartup.text'),
-      prompt: t('quickPrompts.evalStartup.prompt'),
+      text: 'Evaluate Startup',
+      prompt: 'Analyze this startup idea using the innovation evaluation methodology from Notion databases. Provide a structured score and compare with similar case histories.',
       icon: <Rocket size={14} />
     },
     {
       id: 'market-analysis',
-      text: t('quickPrompts.marketAnalysis.text'),
-      prompt: t('quickPrompts.marketAnalysis.prompt'),
+      text: 'Market Analysis',
+      prompt: 'Provide a detailed market analysis for this innovation, including trends, competitors and opportunities based on best practices from Notion databases.',
       icon: <BarChart3 size={14} />
     },
     {
       id: 'best-practices',
-      text: t('quickPrompts.bestPractices.text'),
-      prompt: t('quickPrompts.bestPractices.prompt'),
+      text: 'Best Practices',
+      prompt: 'Show me the most relevant best practices for this sector, extracting insights from available case histories in Notion databases.',
       icon: <Star size={14} />
     },
     {
       id: 'compare-cases',
-      text: t('quickPrompts.compareCases.text'),
-      prompt: t('quickPrompts.compareCases.prompt'),
+      text: 'Compare Cases',
+      prompt: 'Compare this project with the most relevant case histories in Notion databases, highlighting similarities, differences and lessons learned.',
       icon: <Target size={14} />
     }
   ];
 
-  // Deep Dive Sections con traduzioni
+  // Deep Dive Sections aligned with V2 structure (5 operational sections)
 const deepDiveSections = [
   { 
     icon: <Target size={14} />, 
-    text: t('deepDive.sections.jtbdTrends.title'), 
+    text: "Jobs-to-be-Done & Market Trends", 
     key: "jtbd-trends",
-    subtitle: t('deepDive.sections.jtbdTrends.subtitle'),
+    subtitle: "Execution patterns from case histories",
     count: sectionConversations['jtbd-trends']?.length || 0
   },
   { 
     icon: <Zap size={14} />, 
-    text: t('deepDive.sections.competitive.title'), 
+    text: "Competitive Positioning Canvas", 
     key: "competitive",
-    subtitle: t('deepDive.sections.competitive.subtitle'),
+    subtitle: "Differentiation strategies & moats",
     count: sectionConversations.competitive?.length || 0
   },
   { 
     icon: <Rocket size={14} />, 
-    text: t('deepDive.sections.techValidation.title'), 
+    text: "Technology Adoption & Validation", 
     key: "tech-validation",
-    subtitle: t('deepDive.sections.techValidation.subtitle'),
+    subtitle: "Tech stack & architecture patterns",
     count: sectionConversations['tech-validation']?.length || 0
   },
   { 
     icon: <BarChart3 size={14} />, 
-    text: t('deepDive.sections.processMetrics.title'), 
+    text: "Process & Metrics", 
     key: "process-metrics",
-    subtitle: t('deepDive.sections.processMetrics.subtitle'),
+    subtitle: "KPIs & operational excellence",
     count: sectionConversations['process-metrics']?.length || 0
   },
   { 
     icon: <Users size={14} />, 
-    text: t('deepDive.sections.partnership.title'), 
+    text: "Partnership Activation", 
     key: "partnership",
-    subtitle: t('deepDive.sections.partnership.subtitle'),
+    subtitle: "Strategic alliances & channels",
     count: sectionConversations.partnership?.length || 0
   }
 ];
@@ -257,7 +239,6 @@ const handleSectionQuestion = async (section, question) => {
       body: JSON.stringify({
         section: mappedSection,
         question: question,
-        locale: router.locale,
         analysisContext: {
           // NUOVO: Usa i dati reali dall'analisi
           vertical: contextData.verticals || 'IoT Platform Solutions',
@@ -357,7 +338,6 @@ if (!stepHistory.includes(2)) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           query: currentInput,
-          locale: router.locale,
           notionData: {
             totalResults: notionData.totalResults || 0,
             insights: (notionData.insights || []).slice(0, 3),
@@ -424,18 +404,6 @@ console.log('🎯 RESULT DAL BACKEND:', {
     }
   };
 
-  // Show loading while translations are being loaded
-  if (!ready) {
-    return (
-      <div className="flex h-screen w-full bg-gray-50 items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading...</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="flex h-screen w-full bg-gray-50 relative">
       {/* Mobile Sidebar Overlay */}
@@ -456,7 +424,7 @@ console.log('🎯 RESULT DAL BACKEND:', {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Brain size={16} />
-              <span className="font-bold text-sm">{t('app.title')}</span>
+              <span className="font-bold text-sm">Innovation Expert</span>
             </div>
             <button 
               onClick={() => setSidebarOpen(false)}
@@ -465,28 +433,14 @@ console.log('🎯 RESULT DAL BACKEND:', {
               <X size={16} />
             </button>
           </div>
-          <div className="text-xs opacity-90 mt-1">{t('app.caseStudies')}</div>
+          <div className="text-xs opacity-90 mt-1">200+ Case Studies</div>
         </div>
 
         {/* Quick Prompts */}
         <div className="p-3 flex-1 overflow-y-auto">
-          
-          {/* Instructions Link */}
-          <div className="mb-4">
-            <button
-              onClick={() => router.push('/istruzioni')}
-              className="w-full text-left p-3 rounded border border-indigo-200 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 transition-all"
-            >
-              <div className="flex items-center gap-2">
-                <FileText size={14} />
-                <span className="text-xs font-medium">{t('navigation.instructions')}</span>
-              </div>
-              <div className="text-xs text-indigo-600 mt-1">{t('navigation.instructionsSubtitle')}</div>
-            </button>
-          </div>
                     
-          {/* Deep Dive Sections - Always available after analysis */}
-          {currentStep >= 2 && messages.some(m => m.parsedSections) && (
+          {/* Deep Dive Sections - Coming Soon */}
+          {currentStep >= 2 && messages.length > 1 && (
             <div className="mt-6">
               <h3 className="text-sm font-semibold text-gray-700 mb-3">Deep Dive Analysis</h3>
               <div className="space-y-2">
@@ -516,13 +470,13 @@ console.log('🎯 RESULT DAL BACKEND:', {
                 ))}
               </div>
               <p className="text-xs text-gray-500 mt-3 text-center">
-                {t('ui.buttons.comingSoon')}
+                🚀 Interactive analysis coming in next update
               </p>
             </div>
           )}
           {selectedFilters.length > 0 && (
             <div className="mt-4">
-              <h3 className="text-xs font-semibold text-gray-700 mb-2">{t('ui.filters.active')}</h3>
+              <h3 className="text-xs font-semibold text-gray-700 mb-2">Filtri Attivi</h3>
               <div className="flex flex-wrap gap-1">
                 {selectedFilters.map(filter => {
                   const [type, value] = filter.split(':');
@@ -546,9 +500,6 @@ console.log('🎯 RESULT DAL BACKEND:', {
         {/* Header */}
         <div className="flex items-center justify-between p-3 border-b border-gray-200 bg-white">
           <div className="flex items-center gap-3">
-            <span className="bg-orange-100 text-orange-800 text-xs px-2 py-1 rounded-full font-medium">
-              {t('app.alphaVersion')}
-            </span>
             <button 
               onClick={() => setSidebarOpen(true)}
               className="lg:hidden p-1 hover:bg-gray-100 rounded"
@@ -556,34 +507,27 @@ console.log('🎯 RESULT DAL BACKEND:', {
               <Menu size={20} />
             </button>
             
-{selectedFilters.length > 0 && (
-              <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2">
+              <Database size={16} className={notionConnected ? 'text-green-600' : 'text-red-600'} />
+              <span className="text-sm font-medium text-gray-700">
+                3 Database Notion
+              </span>
+              {selectedFilters.length > 0 && (
                 <span className="text-xs text-indigo-600 bg-indigo-100 px-2 py-1 rounded-full">
                   {selectedFilters.length}
                 </span>
-              </div>
-            )}
-          </div>
-          
-          <div className="flex items-center gap-3">
-            {/* Language Switcher */}
-            <div className="flex items-center">
-              <button
-                onClick={() => {
-                  const newLocale = router.locale === 'it' ? 'en' : 'it';
-                  const { pathname, asPath, query } = router;
-                  router.push({ pathname, query }, asPath, { locale: newLocale });
-                }}
-                className="flex items-center gap-2 px-3 py-1 text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-full transition-colors border"
-                title={t('language.switch')}
-              >
-                <span className="font-medium">{t(`language.code.${router.locale}`)}</span>
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" className="opacity-60">
-                  <path d="M12.87 15.07l-2.54-2.51.03-.03c1.74-1.94 2.98-4.17 3.71-6.53H17V4h-7V2H8v2H1v1.99h11.17C11.5 7.92 10.44 9.75 9 11.35 8.07 10.32 7.3 9.19 6.69 8h-2c.73 1.63 1.73 3.17 2.98 4.56l-5.09 5.02L4 19l5-5 3.11 3.11.76-2.04zM18.5 10h-2L12 22h2l1.12-3h4.75L21 22h2l-4.5-12zm-2.62 7l1.62-4.33L19.12 17h-3.24z" />
-                </svg>
-              </button>
+              )}
             </div>
           </div>
+          
+          <button
+            onClick={() => setShowSaveDialog(true)}
+            disabled={messages.length <= 1}
+            className="flex items-center gap-1 px-3 py-1 text-xs bg-indigo-600 text-white rounded hover:bg-indigo-700 disabled:opacity-50 transition-colors"
+          >
+            <Save size={12} />
+            Salva
+          </button>
         </div>
 {/* Progress Indicator */}
         <div className="flex items-center justify-center space-x-4 p-4 bg-gradient-to-r from-indigo-50 to-purple-50 border-b border-gray-200">
@@ -620,12 +564,9 @@ console.log('🎯 RESULT DAL BACKEND:', {
             {/* Step-based content display */}
             {currentStep === 1 && (
               <div className="max-w-4xl mx-auto text-center">
-                <h1 className="text-3xl font-bold text-gray-900 mb-2">{t('app.title')} {t('app.subtitle')}</h1>
-                <p className="text-lg text-gray-700 mb-4 font-medium">
-                  {t('app.methodology')}
-                </p>
+                <h1 className="text-3xl font-bold text-gray-900 mb-4">Innovation Pattern Analysis</h1>
                 <p className="text-gray-600 mb-8">
-                  {t('app.description')}
+                  Descrivi il tuo progetto innovativo per una valutazione basata su 200+ case histories e metodologia proprietaria.
                 </p>
               </div>
             )}
@@ -634,22 +575,22 @@ console.log('🎯 RESULT DAL BACKEND:', {
 {currentStep > 1 && (
   <>
     {/* NUOVA LOGICA: Mostra Deep Dive O messages normali */}
-    {deepDiveMode && messages.some(m => m.parsedSections) ? (
+    {currentStep === 2 && deepDiveMode ? (
   // VISTA DEEP DIVE
-  <div className="w-full max-w-none">
+  <div className="max-w-4xl mx-auto">
         {/* Back button */}
         <button
           onClick={() => setDeepDiveMode(null)}
           className="mb-6 flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
         >
           <ChevronRight className="rotate-180" size={20} />
-          <span>{t('deepDive.backToAnalysis')}</span>
+          <span>Back to full analysis</span>
         </button>
         
         {/* Deep Dive Content */}
 <div className="space-y-6">
   {/* Sezione contenuto principale */}
-  <div className="bg-white border border-gray-200 rounded-lg p-8">
+  <div className="bg-white border border-gray-200 rounded-lg p-6">
     <h2 className="text-2xl font-bold text-gray-900 mb-4">
       {deepDiveMode === 'jtbd-trends' && '🎯 Jobs-to-be-Done & Market Trends'}
 {deepDiveMode === 'competitive' && '⚔️ Competitive Positioning Canvas'}
@@ -672,10 +613,10 @@ console.log('🎯 RESULT DAL BACKEND:', {
   return (
     <>
       {sections.jtbdTrends && (
-        <div className="space-y-6">
-          <h3 className="text-xl font-bold text-gray-900 mb-4">Jobs-to-be-Done & Market Trends</h3>
-          <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
-            <div className="prose prose-indigo max-w-none leading-relaxed" dangerouslySetInnerHTML={{ __html: formatMarkdownText(sections.jtbdTrends) }} />
+        <div className="space-y-4">
+          <h3 className="text-lg font-semibold text-gray-800">Jobs-to-be-Done & Market Trends</h3>
+          <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-4">
+            <div className="text-gray-700" dangerouslySetInnerHTML={{ __html: formatMarkdownText(sections.jtbdTrends) }} />
           </div>
         </div>
       )}
@@ -686,10 +627,10 @@ case 'competitive':
   return (
     <>
       {sections.competitiveCanvas && (
-        <div className="space-y-6">
-          <h3 className="text-xl font-bold text-gray-900 mb-4">Competitive Positioning Canvas</h3>
-          <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
-            <div className="prose prose-yellow max-w-none leading-relaxed" dangerouslySetInnerHTML={{ __html: formatMarkdownText(sections.competitiveCanvas) }} />
+        <div className="space-y-4">
+          <h3 className="text-lg font-semibold text-gray-800">Competitive Positioning Canvas</h3>
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+            <div className="text-gray-700" dangerouslySetInnerHTML={{ __html: formatMarkdownText(sections.competitiveCanvas) }} />
           </div>
         </div>
       )}
@@ -700,10 +641,10 @@ case 'tech-validation':
   return (
     <>
       {sections.techValidation && (
-        <div className="space-y-6">
-          <h3 className="text-xl font-bold text-gray-900 mb-4">Technology Adoption & Validation</h3>
-          <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
-            <div className="prose prose-green max-w-none leading-relaxed" dangerouslySetInnerHTML={{ __html: formatMarkdownText(sections.techValidation) }} />
+        <div className="space-y-4">
+          <h3 className="text-lg font-semibold text-gray-800">Technology Adoption & Validation</h3>
+          <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+            <div className="text-gray-700" dangerouslySetInnerHTML={{ __html: formatMarkdownText(sections.techValidation) }} />
           </div>
         </div>
       )}
@@ -714,10 +655,10 @@ case 'process-metrics':
   return (
     <>
       {sections.processMetrics && (
-        <div className="space-y-6">
-          <h3 className="text-xl font-bold text-gray-900 mb-4">Process & Metrics</h3>
-          <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
-            <div className="prose prose-purple max-w-none leading-relaxed" dangerouslySetInnerHTML={{ __html: formatMarkdownText(sections.processMetrics) }} />
+        <div className="space-y-4">
+          <h3 className="text-lg font-semibold text-gray-800">Process & Metrics</h3>
+          <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+            <div className="text-gray-700" dangerouslySetInnerHTML={{ __html: formatMarkdownText(sections.processMetrics) }} />
           </div>
         </div>
       )}
@@ -728,10 +669,10 @@ case 'partnership':
   return (
     <>
       {sections.partnership && (
-        <div className="space-y-6">
-          <h3 className="text-xl font-bold text-gray-900 mb-4">Partnership Activation</h3>
-          <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
-            <div className="prose prose-blue max-w-none leading-relaxed" dangerouslySetInnerHTML={{ __html: formatMarkdownText(sections.partnership) }} />
+        <div className="space-y-4">
+          <h3 className="text-lg font-semibold text-gray-800">Partnership Activation</h3>
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <div className="text-gray-700" dangerouslySetInnerHTML={{ __html: formatMarkdownText(sections.partnership) }} />
           </div>
         </div>
       )}
@@ -746,28 +687,24 @@ case 'partnership':
   </div>
 
   {/* Area Q&A Interattiva */}
-  <div className="bg-white border border-gray-200 rounded-lg p-8">
+  <div className="bg-white border border-gray-200 rounded-lg p-6">
     <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
       <MessageCircle size={20} className="text-indigo-600" />
-      {t('deepDive.askMore')}
+      Approfondisci questa sezione
     </h3>
     
     {/* Thread conversazione per questa sezione */}
     {sectionConversations[deepDiveMode] && sectionConversations[deepDiveMode].length > 0 && (
-      <div className="mb-6 space-y-4 max-h-96 overflow-y-auto border border-gray-200 rounded-lg p-4 bg-gray-50">
+      <div className="mb-4 space-y-3 max-h-60 overflow-y-auto">
         {sectionConversations[deepDiveMode].map((msg, idx) => (
-          <div key={idx} className={`flex gap-4 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-            <div className={`max-w-4xl p-4 rounded-lg shadow-sm ${
+          <div key={idx} className={`flex gap-3 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+            <div className={`flex-1 p-3 rounded-lg ${
               msg.role === 'user' 
                 ? 'bg-indigo-600 text-white' 
-                : 'bg-white text-gray-800 border border-gray-200'
+                : 'bg-gray-100 text-gray-800'
             }`}>
-              {msg.role === 'user' ? (
-                <div className="text-sm leading-relaxed">{msg.content}</div>
-              ) : (
-                <div className="prose prose-sm max-w-none leading-relaxed text-gray-800" dangerouslySetInnerHTML={{ __html: formatMarkdownText(msg.content) }} />
-              )}
-              <div className="text-xs opacity-70 mt-2 pt-2 border-t border-gray-200 border-opacity-30">
+              <div className="text-sm">{msg.content}</div>
+              <div className="text-xs opacity-70 mt-1">
                 {msg.timestamp.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}
               </div>
             </div>
@@ -780,7 +717,7 @@ case 'partnership':
     {sectionLoading[deepDiveMode] && (
       <div className="flex items-center gap-2 mb-4 p-3 bg-indigo-50 rounded-lg">
         <Loader className="animate-spin h-4 w-4 text-indigo-600" />
-        <span className="text-sm text-indigo-700">{t('deepDive.generating')}</span>
+        <span className="text-sm text-indigo-700">Analizzo la tua domanda...</span>
       </div>
     )}
     
@@ -795,7 +732,13 @@ case 'partnership':
             handleSectionQuestion(deepDiveMode, sectionInputs[deepDiveMode]);
           }
         }}
-        placeholder={t(`deepDive.placeholder.${deepDiveMode}`)}
+        placeholder={`Chiedi approfondimenti su ${
+  deepDiveMode === 'jtbd-trends' ? 'Jobs-to-be-Done e trend di mercato' :
+  deepDiveMode === 'competitive' ? 'posizionamento competitivo' :
+  deepDiveMode === 'tech-validation' ? 'tecnologie e validazione' :
+  deepDiveMode === 'process-metrics' ? 'metriche e processi' :
+  'strategie di partnership'
+}...`}
         className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm"
         disabled={sectionLoading[deepDiveMode]}
       />
@@ -809,7 +752,7 @@ case 'partnership':
     </div>
     
     <div className="mt-2 text-xs text-gray-500">
-      {t('deepDive.examples')}
+      💡 Esempi: "Quali sono i rischi principali?", "Come posso differenziarmi?", "Quali metriche monitorare?"
     </div>
   </div>
 </div>
@@ -887,7 +830,7 @@ case 'partnership':
   <div className="mt-6">
     <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-4 mb-4">
                           <p className="text-sm text-indigo-800">
-                            {t('analysis.completed')}
+                            ✅ Analisi completata! Procedi con la validazione per generare lo scoring calibrato.
                           </p>
                         </div>
                         <button
@@ -900,7 +843,7 @@ case 'partnership':
                           className="w-full px-4 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors flex items-center justify-center gap-2"
                         >
                           <CheckCircle size={20} />
-                          {t('ui.buttons.proceed')}
+                          Procedi alla Validazione
                         </button>
                       </div>
                     )}
@@ -1046,7 +989,7 @@ case 'partnership':
 
                 {message.sources && message.sources.length > 0 && (
                   <div className="mt-4 pt-4 border-t border-gray-200">
-                    <p className="text-xs font-medium text-gray-600 mb-2">🔍 {t('ui.conversation.analyzed')}:</p>
+                    <p className="text-xs font-medium text-gray-600 mb-2">🔍 Database Consultati:</p>
                     <div className="space-y-2">
                       {message.sources.map((source, idx) => (
                         <div key={idx} className="flex items-center justify-between text-xs bg-gray-50 px-3 py-2 rounded">
@@ -1057,7 +1000,7 @@ case 'partnership':
                     </div>
                     {message.notionQuery && (
                       <div className="mt-2 text-xs text-gray-600">
-                        {t('ui.conversation.totalResults')}: {message.notionQuery.totalResults} • {t('ui.conversation.filters')}: {message.notionQuery.filtersApplied}
+                        Totale risultati: {message.notionQuery.totalResults} • Filtri: {message.notionQuery.filtersApplied}
                       </div>
                     )}
                   </div>
@@ -1070,7 +1013,7 @@ case 'partnership':
                   minute: '2-digit' 
                 })}</span>
                 {message.role === 'assistant' && !message.isError && (
-                  <span className="text-green-600">• {t('ui.conversation.analyzed')}</span>
+                  <span className="text-green-600">• DB analizzati</span>
                 )}
               </div>
             </div>
@@ -1091,7 +1034,7 @@ case 'partnership':
             <div className="bg-white text-gray-800 p-4 rounded-lg border border-gray-200 shadow-sm flex-1">
               <div className="flex items-center gap-2">
                 <Loader className="animate-spin h-4 w-4 text-purple-500" />
-                <span className="text-sm">{t('system.loading.notion')}</span>
+                <span className="text-sm">Analizzo i database Notion...</span>
               </div>
             </div>
           </div>
@@ -1105,7 +1048,7 @@ case 'partnership':
             <div className="bg-white text-gray-800 p-4 rounded-lg border border-gray-200 shadow-sm flex-1">
               <div className="flex items-center gap-2">
                 <Loader className="animate-spin h-4 w-4 text-indigo-500" />
-                <span className="text-sm">{t('system.loading.claude')}</span>
+                <span className="text-sm">Elaboro l'analisi di innovazione...</span>
               </div>
             </div>
           </div>
@@ -1118,16 +1061,15 @@ case 'partnership':
           </div>
         </div>
 
-        {/* Input Area - Hide in deep-dive mode */}
-        {!deepDiveMode && (
-          <div className="p-4 border-t border-gray-200 bg-white">
+        {/* Input Area */}
+        <div className="p-4 border-t border-gray-200 bg-white">
           <div className="flex gap-2">
             <input
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleSubmit(e)}
-              placeholder={t('form.placeholder')}
+              placeholder="Descrivi la tua startup o progetto innovativo per la valutazione..."
               className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm"
               disabled={isLoading || isAnalyzing}
             />
@@ -1144,17 +1086,51 @@ case 'partnership':
             💡 Usa i Quick Prompts nella sidebar o descrivi il tuo progetto per una valutazione completa
           </div>
         </div>
-        )}
       </div>
 
+      {/* Save Dialog */}
+      {showSaveDialog && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white p-6 rounded-lg shadow-xl max-w-md w-full">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Salva Conversazione</h3>
+            <input
+              type="text"
+              value={conversationTitle}
+              onChange={(e) => setConversationTitle(e.target.value)}
+              placeholder="Titolo della conversazione..."
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 mb-4"
+              autoFocus
+            />
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setShowSaveDialog(false)}
+                className="px-4 py-2 text-gray-600 hover:text-gray-800 border border-gray-300 rounded-lg hover:bg-gray-50"
+              >
+                Annulla
+              </button>
+              <button
+                onClick={() => {
+                  if (conversationTitle.trim()) {
+                    setSavedConversations(prev => [{
+                      id: Date.now().toString(),
+                      title: conversationTitle.trim(),
+                      messages: [...messages],
+                      timestamp: new Date(),
+                      filters: [...selectedFilters]
+                    }, ...prev]);
+                    setShowSaveDialog(false);
+                    setConversationTitle('');
+                  }
+                }}
+                disabled={!conversationTitle.trim()}
+                className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50"
+              >
+                Salva
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
-}
-
-export async function getStaticProps({ locale }) {
-  return {
-    props: {
-      ...(await serverSideTranslations(locale, ['common'])),
-    },
-  };
 }

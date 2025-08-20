@@ -1,9 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback, memo } from 'react';
 import { CheckCircle, AlertCircle } from 'lucide-react';
-import { useTranslation } from 'next-i18next';
 
 const ValidationQuestions = memo(function ValidationQuestions({ questions, onComplete }) {
-  const { t } = useTranslation('common');
   const [answers, setAnswers] = useState({});
   const [wordCounts, setWordCounts] = useState({});
   const [errors, setErrors] = useState({});
@@ -17,7 +15,6 @@ const ValidationQuestions = memo(function ValidationQuestions({ questions, onCom
         question: questions[0].question?.substring(0, 50) + '...',
         hasOptions: !!questions[0].options
       });
-      console.log('Tutte le dimensioni:', questions.map(q => q.dimension));
     }
   }, [questions]);
 
@@ -29,8 +26,6 @@ const ValidationQuestions = memo(function ValidationQuestions({ questions, onCom
 
   // Handler ottimizzato con useCallback
   const handleTextChange = useCallback((dimension, value) => {
-    console.log(`📝 TextChange: ${dimension}, value length: ${value.length}`);
-    
     // Aggiorna la risposta
     setAnswers(prev => ({
       ...prev,
@@ -39,7 +34,6 @@ const ValidationQuestions = memo(function ValidationQuestions({ questions, onCom
     
     // Calcola il numero di parole
     const wordCount = countWords(value);
-    console.log(`🔢 WordCount for ${dimension}: ${wordCount}`);
     
     setWordCounts(prev => ({
       ...prev,
@@ -80,19 +74,12 @@ const ValidationQuestions = memo(function ValidationQuestions({ questions, onCom
 
   // Memoizza il check se tutte le risposte sono valide
   const isFormValid = useMemo(() => {
-    if (!questions || questions.length === 0) {
-      console.log('❌ Form invalid: no questions');
-      return false;
-    }
+    if (!questions || questions.length === 0) return false;
     
-    const valid = questions.every(q => {
+    return questions.every(q => {
       const wordCount = wordCounts[q.dimension] || 0;
-      console.log(`✅ Check ${q.dimension}: ${wordCount} words (need 20)`);
       return wordCount >= 20;
     });
-    
-    console.log(`🔍 Form valid: ${valid}`);
-    return valid;
   }, [questions, wordCounts]);
 
   // Memoizza il conteggio totale delle parole
@@ -103,27 +90,20 @@ const ValidationQuestions = memo(function ValidationQuestions({ questions, onCom
   // Se non ci sono domande, non mostrare nulla
   if (!questions || questions.length === 0) {
     console.log('⚠️ Nessuna validation question ricevuta');
-    return <div className="bg-red-100 p-4 rounded">No validation questions received</div>;
+    return null;
   }
-
-  console.log('🎯 RENDERING ValidationQuestions with:', {
-    questionsLength: questions?.length,
-    isFormValid,
-    totalWordCount,
-    wordCounts
-  });
 
   return (
     <div className="bg-white border border-gray-200 rounded-lg p-6">
       <h2 className="text-xl font-semibold text-gray-900 mb-2">
-        {t('validation.title')}
+        Validazione per Assessment Calibrato
       </h2>
       <p className="text-gray-600 mb-2">
-        {t('validation.description')}
+        Descrivi il tuo approccio per ogni dimensione strategica.
       </p>
       <div className="flex justify-between items-center mb-6">
         <p className="text-sm text-indigo-600">
-          {t('validation.detailedTip')}
+          💡 Risposte dettagliate (minimo 20 parole) generano scoring più accurati
         </p>
         {totalWordCount > 0 && (
           <span className="text-xs text-gray-500">
@@ -157,7 +137,7 @@ const ValidationQuestions = memo(function ValidationQuestions({ questions, onCom
                 <textarea
                   className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none"
                   rows="4"
-                  placeholder={t('validation.placeholder')}
+                  placeholder="Descrivi il tuo approccio in dettaglio..."
                   value={answers[q.dimension] || ''}
                   onChange={(e) => handleTextChange(q.dimension, e.target.value)}
                 />
@@ -197,7 +177,7 @@ const ValidationQuestions = memo(function ValidationQuestions({ questions, onCom
         }`}
       >
         <CheckCircle className="mr-2" size={16} />
-        {t('validation.generateScoring')}
+        Genera Scoring Calibrato
       </button>
     </div>
   );
