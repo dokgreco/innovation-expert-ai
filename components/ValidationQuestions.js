@@ -216,7 +216,7 @@ function ValidationQuestions({ questions, onComplete, resetTrigger, isEditingAns
         <CheckCircle className="mr-2" size={16} />
         {submissionCount === 0 
           ? t('validation.generateScoring')
-          : `Rigenera Scoring (Iterazione ${submissionCount + 1}/3)`
+          : t('validation.regenerateScoring', { current: submissionCount + 1, total: 3 })
         }
       </button>
     </div>

@@ -2,13 +2,13 @@
   "app": {
     "title": "Innovation Expert AI",
     "subtitle": "Pattern Analysis",
-    "description": "Descrivi il tuo progetto innovativo per una valutazione basata su 200+ case histories e metodologia proprietaria.",
+    "description": "Descrivi il tuo progetto innovativo per una valutazione basata su >300 case histories e metodologia proprietaria.",
     "alphaVersion": "Versione Alpha",
     "methodology": "Metodologia proprietaria su basi conoscenza curate",
     "caseStudies": ">300 case histories reali e selezionate"
   },
   "welcome": {
-    "message": "Ciao! Sono il tuo Innovation Expert AI. Ho accesso ai database Notion con oltre 200 case histories e best practices per valutare startup e progetti innovativi. Usa i quick prompts per iniziare o fammi una domanda specifica."
+    "message": "Ciao! Sono il tuo Innovation Expert AI. Ho accesso ai database con oltre 300 case histories e best practices per valutare startup e progetti innovativi. Usa i quick prompts per iniziare o fammi una domanda specifica."
   },
   "navigation": {
     "menu": "Menu",
@@ -39,7 +39,22 @@
   },
   "scoring": {
     "title": "🎯 Innovation Score",
-    "overall": "Punteggio Complessivo"
+    "overall": "Punteggio Complessivo",
+    "subtitle": "Calibrato su benchmark reali",
+    "dimensionsTitle": "📊 Scoring per Dimensione",
+    "riskAssessment": "⚠️ Risk Assessment",
+    "priority": "Priorità",
+    "riskLevel": {
+      "high": "Alto",
+      "medium": "Medio",
+      "low": "Basso"
+    },
+    "rescore": "Ri-Valuta",
+    "rescoreSubtitle": "Aggiorna le tue risposte per migliorare lo scoring",
+    "generated": "Ho generato lo scoring calibrato basato sulla tua validazione:",
+    "recalculated": "Ho ricalcolato lo scoring (Iterazione {{iteration}}/3):",
+    "iteration": "Iterazione {{current}}/{{total}} - Variazione Score:",
+    "improve": "Migliora Risposte ({{current}}/{{total}})"
   },
   "save": {
     "conversation": "Salva Conversazione",
@@ -61,19 +76,19 @@
   "quickPrompts": {
     "evalStartup": {
       "text": "Valuta Startup",
-      "prompt": "Analizza questa idea di startup utilizzando la metodologia di valutazione dell'innovazione dai database Notion. Fornisci un punteggio strutturato e confronta con casi simili."
+      "prompt": "Analizza questa idea di startup utilizzando la metodologia proprietaria di valutazione dell'innovazione. Fornisci un punteggio strutturato e confronta con casi simili."
     },
     "marketAnalysis": {
       "text": "Analisi Mercato",
-      "prompt": "Fornisci un'analisi dettagliata del mercato per questa innovazione, inclusi trend, concorrenti e opportunità basata sulle best practice dai database Notion."
+      "prompt": "Fornisci un'analisi dettagliata del mercato per questa innovazione, inclusi trend, concorrenti e opportunità basata sulle best practice proprietarie."
     },
     "bestPractices": {
       "text": "Best Practice",
-      "prompt": "Mostrami le best practice più rilevanti per questo settore, estraendo insights dalle case histories disponibili nei database Notion."
+      "prompt": "Mostrami le best practice più rilevanti per questo settore, estraendo insights dalle case histories proprietarie."
     },
     "compareCases": {
       "text": "Confronta Casi",
-      "prompt": "Confronta questo progetto con le case histories più rilevanti nei database Notion, evidenziando somiglianze, differenze e lezioni apprese."
+      "prompt": "Confronta questo progetto con le case histories più rilevanti della knowledge base proprietaria, evidenziando somiglianze, differenze e lezioni apprese."
     }
   },
   "deepDive": {
@@ -113,19 +128,19 @@
   },
   "system": {
     "loading": {
-      "notion": "Analizzo i database Notion...",
+      "databases": "Analizzo la knowledge base...",
       "claude": "Elaboro l'analisi di innovazione...",
       "scoring": "Generando scoring..."
     },
     "status": {
-      "databases": "3 Database Notion",
+      "databases": "3 Knowledge Bases",
       "connected": "Connesso",
       "analyzing": "Analizzando...",
       "completed": "Completato"
     },
     "errors": {
       "analysis": "Errore nell'analisi. Riprova.",
-      "notion": "Errore nel database Notion.",
+      "database": "Errore nella knowledge base.",
       "network": "Errore di rete. Verifica connessione."
     }
   },
@@ -149,12 +164,20 @@
     "title": "Validazione per Assessment Calibrato",
     "description": "Descrivi il tuo approccio per ogni dimensione strategica.",
     "detailedTip": "💡 Risposte dettagliate (minimo 20 parole) generano scoring più accurati",
-    "totalWords": "Totale: {count} parole",
+    "totalWords": "Totale: {{count}} parole",
     "placeholder": "Descrivi il tuo approccio in dettaglio...",
-    "wordCount": "{count} parole",
+    "wordCount": "{{count}} parole",
     "minWords": "Minimo 20 parole",
     "generateScoring": "Genera Scoring Calibrato",
-    "minWordsError": "Minimo 20 parole richieste (attuale: {count})"
+    "regenerateScoring": "Rigenera Scoring (Iterazione {{current}}/{{total}})",
+    "minWordsError": "Minimo 20 parole richieste (attuale: {{count}})",
+    "questions": {
+      "jtbdTrends": "Come intendi affrontare i Jobs-to-be-Done e sfruttare i trend di mercato?",
+      "competitive": "Quale è la tua strategia di posizionamento competitivo e differenziazione?",
+      "techValidation": "Come validerai la tua tecnologia e assicurerai un'adozione di successo?",
+      "processMetrics": "Quali processi e metriche utilizzerai per misurare il successo?",
+      "partnership": "Quali strategie di partnership implementerai per scalare il tuo business?"
+    }
   },
   "instructions": {
     "backToApp": "Torna all'Applicazione",

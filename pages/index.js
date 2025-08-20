@@ -120,6 +120,13 @@ const [scoringData, setScoringData] = useState(null);
   const [currentStep, setCurrentStep] = useState(1);
   const [stepHistory, setStepHistory] = useState([1]);
   const [deepDiveMode, setDeepDiveMode] = useState(null);
+  const [validationResetTrigger, setValidationResetTrigger] = useState(0);
+  
+  // 🚀 RE-SUBMISSION FLOW STATES (Phase E.3)
+  const [scoringHistory, setScoringHistory] = useState([]);
+  const [isEditingAnswers, setIsEditingAnswers] = useState(false);
+  const [submissionCount, setSubmissionCount] = useState(0);
+  const [previousScore, setPreviousScore] = useState(null);
   const [analysisData, setAnalysisData] = useState(null);
   // Stati per Deep Dive conversations
 const [sectionConversations, setSectionConversations] = useState({});
@@ -515,9 +522,6 @@ console.log('🎯 RESULT DAL BACKEND:', {
                   </div>
                 ))}
               </div>
-              <p className="text-xs text-gray-500 mt-3 text-center">
-                {t('ui.buttons.comingSoon')}
-              </p>
             </div>
           )}
           {selectedFilters.length > 0 && (
@@ -912,6 +916,9 @@ case 'partnership':
                       <div className="mt-6">
                         <ValidationQuestions 
                           questions={message.parsedSections.validationQuestions}
+                          resetTrigger={validationResetTrigger}
+                          isEditingAnswers={isEditingAnswers}
+                          submissionCount={submissionCount}
                           onComplete={async (answers) => {
                             console.log('Validation answers:', answers);
                             
@@ -937,7 +944,8 @@ case 'partnership':
                                 headers: { 'Content-Type': 'application/json' },
                                 body: JSON.stringify({
                                   analysisData: analysisData,
-                                  validationAnswers: answers
+                                  validationAnswers: answers,
+                                  language: router.locale || 'it'
                                 })
                               });
                               
@@ -947,19 +955,49 @@ case 'partnership':
                               
                               const result = await response.json();
                               
+                              // 🚀 RE-SUBMISSION LOGIC - Salva nella history e calcola delta
+                              const newSubmissionCount = submissionCount + 1;
+                              const currentScore = result.scoring.overall.score;
+                              let scoreDelta = null;
+                              
+                              if (previousScore !== null) {
+                                scoreDelta = currentScore - previousScore;
+                              }
+                              
+                              // Salva nella history
+                              const scoringRecord = {
+                                submissionNumber: newSubmissionCount,
+                                score: currentScore,
+                                rating: result.scoring.overall.rating,
+                                delta: scoreDelta,
+                                timestamp: new Date(),
+                                answers: answers
+                              };
+                              
+                              setScoringHistory(prev => [...prev, scoringRecord]);
+                              setSubmissionCount(newSubmissionCount);
+                              setPreviousScore(currentScore);
+                              setIsEditingAnswers(false);
+                              
+                              console.log('💾 Scoring saved to history:', scoringRecord);
+                              
                               // Passa automaticamente a Step 4
                               setCurrentStep(4);
                               if (!stepHistory.includes(4)) {
                                 setStepHistory([...stepHistory, 4]);
                               }
                               
-                              // Aggiungi il messaggio con lo scoring
+                              // Aggiungi il messaggio con lo scoring e delta
                               const scoringMessage = {
                                 id: Date.now().toString(),
                                 role: 'assistant',
-                                content: 'Ho generato lo scoring calibrato basato sulla tua validazione:',
+                                content: submissionCount > 0 
+                                  ? t('scoring.recalculated', { iteration: newSubmissionCount })
+                                  : t('scoring.generated'),
                                 timestamp: new Date(),
                                 scoringData: result.scoring,
+                                scoreDelta: scoreDelta,
+                                submissionNumber: newSubmissionCount,
                                 isScoring: true
                               };
                               
@@ -985,8 +1023,8 @@ case 'partnership':
                     <div className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white p-6 rounded-lg">
                       <div className="flex items-center justify-between">
                         <div>
-                          <h3 className="text-lg font-bold">🎯 Innovation Score</h3>
-                          <p className="text-indigo-100 text-sm">Calibrato su benchmark reali</p>
+                          <h3 className="text-lg font-bold">{t('scoring.title')}</h3>
+                          <p className="text-indigo-100 text-sm">{t('scoring.subtitle')}</p>
                         </div>
                         <div className="text-right">
                           <div className="text-3xl font-bold">{message.scoringData.overall.score}/10</div>
@@ -995,9 +1033,52 @@ case 'partnership':
                       </div>
                     </div>
 
+                    {/* Delta Score Display (solo per re-submissions) */}
+                    {message.scoreDelta !== null && message.scoreDelta !== undefined && (
+                      <div className={`border-2 rounded-lg p-4 ${
+                        message.scoreDelta > 0 
+                          ? 'border-green-200 bg-green-50' 
+                          : message.scoreDelta < 0 
+                          ? 'border-red-200 bg-red-50'
+                          : 'border-yellow-200 bg-yellow-50'
+                      }`}>
+                        <div className="flex items-center justify-center space-x-3">
+                          <div className="text-sm font-medium text-gray-700">
+                            {t('scoring.iteration', { current: message.submissionNumber, total: 3 })}
+                          </div>
+                          <div className={`text-xl font-bold ${
+                            message.scoreDelta > 0 
+                              ? 'text-green-600' 
+                              : message.scoreDelta < 0 
+                              ? 'text-red-600' 
+                              : 'text-yellow-600'
+                          }`}>
+                            {message.scoreDelta > 0 ? '+' : ''}{message.scoreDelta.toFixed(1)}
+                            {message.scoreDelta > 0 ? ' ↗️' : message.scoreDelta < 0 ? ' ↘️' : ' ➡️'}
+                          </div>
+                        </div>
+                        <div className="text-center mt-2">
+                          <span className={`text-sm ${
+                            message.scoreDelta > 0 
+                              ? 'text-green-700' 
+                              : message.scoreDelta < 0 
+                              ? 'text-red-700' 
+                              : 'text-yellow-700'
+                          }`}>
+                            {message.scoreDelta > 0 
+                              ? '✅ Miglioramento rilevato!' 
+                              : message.scoreDelta < 0 
+                              ? '⚠️ Score diminuito' 
+                              : '💡 Score invariato'
+                            }
+                          </span>
+                        </div>
+                      </div>
+                    )}
+
                     {/* Dimensions */}
                     <div className="bg-white border border-gray-200 rounded-lg p-4">
-                      <h4 className="font-semibold text-gray-900 mb-4">📊 Scoring per Dimensione</h4>
+                      <h4 className="font-semibold text-gray-900 mb-4">{t('scoring.dimensionsTitle')}</h4>
                       <div className="space-y-4">
                         {message.scoringData.dimensions.map((dim, idx) => (
                           <div key={idx}>
@@ -1019,15 +1100,15 @@ case 'partnership':
 
                     {/* Risks */}
                     <div className="bg-white border border-gray-200 rounded-lg p-4">
-                      <h4 className="font-semibold text-gray-900 mb-4">⚠️ Risk Assessment</h4>
+                      <h4 className="font-semibold text-gray-900 mb-4">{t('scoring.riskAssessment')}</h4>
                       <div className="space-y-3">
                         {message.scoringData.risks.map((risk, idx) => (
                           <div key={idx} className="border-l-4 border-yellow-400 pl-4">
                             <div className="flex items-center gap-2 mb-1">
                               <span className="font-medium text-gray-900">{risk.factor}</span>
                               <span className={`text-xs px-2 py-1 rounded-full ${
-                                risk.level === 'Alto' ? 'bg-red-100 text-red-800' : 
-                                risk.level === 'Medio' ? 'bg-yellow-100 text-yellow-800' : 
+                                risk.level === 'Alto' || risk.level === 'High' ? 'bg-red-100 text-red-800' : 
+                                risk.level === 'Medio' || risk.level === 'Medium' ? 'bg-yellow-100 text-yellow-800' : 
                                 'bg-green-100 text-green-800'
                               }`}>
                                 {risk.level}
@@ -1035,11 +1116,47 @@ case 'partnership':
                             </div>
                             <p className="text-sm text-gray-600">{risk.description}</p>
                             <p className="text-sm text-indigo-600 mt-1">
-                              <strong>Mitigazione:</strong> {risk.mitigation}
+                              <strong>{t('scoring.priority')}:</strong> {risk.mitigation}
                             </p>
                           </div>
                         ))}
                       </div>
+                    </div>
+                    
+                    {/* Re-Score Button */}
+                    <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 text-center">
+                      <h4 className="font-semibold text-gray-900 mb-2">{t('scoring.rescore')}</h4>
+                      <p className="text-sm text-gray-600 mb-4">{t('scoring.rescoreSubtitle')}</p>
+                      
+                      {submissionCount < 3 ? (
+                        <button
+                          onClick={() => {
+                            console.log('🔄 RE-SCORE button clicked - resetting validation, iteration:', submissionCount + 1);
+                            setCurrentStep(3);
+                            setStepHistory(prev => [...prev, 3]);
+                            setValidationResetTrigger(prev => prev + 1);
+                            setIsEditingAnswers(true);
+                          }}
+                          className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
+                        >
+                          {submissionCount === 0 
+                            ? t('scoring.rescore') 
+                            : t('scoring.improve', { current: submissionCount + 1, total: 3 })
+                          }
+                        </button>
+                      ) : (
+                        <div className="text-center">
+                          <p className="text-sm text-gray-600 mb-2">
+                            ✅ Limite di 3 iterazioni raggiunto
+                          </p>
+                          <button
+                            disabled
+                            className="px-4 py-2 bg-gray-300 text-gray-500 rounded-lg cursor-not-allowed"
+                          >
+                            Limite Raggiunto (3/3)
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}
@@ -1089,10 +1206,14 @@ case 'partnership':
               <Database size={16} className="text-white animate-pulse" />
             </div>
             <div className="bg-white text-gray-800 p-4 rounded-lg border border-gray-200 shadow-sm flex-1">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 mb-3">
                 <Loader className="animate-spin h-4 w-4 text-purple-500" />
-                <span className="text-sm">{t('system.loading.notion')}</span>
+                <span className="text-sm font-medium">{t('system.loading.databases')}</span>
               </div>
+              <div className="w-full bg-gray-200 rounded-full h-2 mb-2">
+                <div className="bg-gradient-to-r from-purple-500 to-purple-600 h-2 rounded-full animate-pulse" style={{width: '65%'}}></div>
+              </div>
+              <div className="text-xs text-gray-500">Analyzing 300+ case histories...</div>
             </div>
           </div>
         )}
@@ -1103,10 +1224,14 @@ case 'partnership':
               <Brain size={16} className="text-white" />
             </div>
             <div className="bg-white text-gray-800 p-4 rounded-lg border border-gray-200 shadow-sm flex-1">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 mb-3">
                 <Loader className="animate-spin h-4 w-4 text-indigo-500" />
-                <span className="text-sm">{t('system.loading.claude')}</span>
+                <span className="text-sm font-medium">{t('system.loading.claude')}</span>
               </div>
+              <div className="w-full bg-gray-200 rounded-full h-2 mb-2">
+                <div className="bg-gradient-to-r from-indigo-500 to-indigo-600 h-2 rounded-full animate-pulse" style={{width: '80%'}}></div>
+              </div>
+              <div className="text-xs text-gray-500">Processing innovation analysis...</div>
             </div>
           </div>
         )}
@@ -1118,8 +1243,8 @@ case 'partnership':
           </div>
         </div>
 
-        {/* Input Area - Hide in deep-dive mode */}
-        {!deepDiveMode && (
+        {/* Input Area - Hide in deep-dive mode and validation step */}
+        {!deepDiveMode && currentStep !== 3 && (
           <div className="p-4 border-t border-gray-200 bg-white">
           <div className="flex gap-2">
             <input
