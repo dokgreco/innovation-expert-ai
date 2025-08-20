@@ -413,13 +413,11 @@ function applyAdaptiveAcceptance(results) {
   // Estrai tutti gli score
   const allScores = results.map(r => r.finalScore || r.relevanceScore || 0);
   
-  // Calcola il 70° percentile (accetta solo top 30%)
-  // Usa 60° percentile per essere meno restrittivi
-const cutoff = percentile(allScores, 40);
+  // Calcola il 60° percentile come da specifiche  
+const cutoff = percentile(allScores, 60);
   
-  // Imposta un minimo di sicurezza per evitare di escludere tutto
-  // Abbassa il minimo per accettare risultati con score più bassi ma rilevanti
-const minAcceptable = 3.5;
+  // Imposta minAcceptable = 25 come da specifiche critiche
+const minAcceptable = 25;
   
   // Filtra risultati che superano la soglia adattiva
   const accepted = results.filter(r => {
@@ -1012,19 +1010,18 @@ function extractAllProperties(page) {
   const MAX_PROPERTY_LENGTH = 500;
   let propertyCount = 0;
   
-  // Lista delle properties prioritarie da cercare
-  const priorityFields = [
-    'JTDs', 'Jobs to be Done', 'Jobs-to-be-Done',
-    'Business Model', 'Business Model - Best Practice',
-    'Technology Adoption & Validation', 'Technology Adoption',
-    'KOR', 'Key Results', 'OKR',
-    'Market Type Strategy', 'Market Strategy',
-    'Competing Factors', 'Competition',
-    'Description', 'Descrizione',
-    'Impact', 'Impatto',
-    'Technologies', 'Tecnologie', 'Tech Stack',
-    'Value Proposition', 'Value Prop',
-    'Classification', 'Classificazione', 'Category'
+  // 🔧 FIXED: Properties specifiche per database come da specifiche
+  const dbSpecificPriorities = {
+    [databases[0]]: ['JTDs', 'Business Model', 'Technology Adoption & Validation', 'KOR', 'Market Type Strategy', 'Competing Factors'], // DB1
+    [databases[1]]: ['Description', 'Impact', 'Technologies', 'Value Proposition', 'Target Market', 'Hacked Trends'], // DB2
+    [databases[2]]: ['Value Proposition - Competing Formula', 'JTDs', 'Target Synergies', 'Competing Factors'] // DB3
+  };
+  
+  // Identifica quale database per questo page
+  const currentDbId = page.parent?.database_id;
+  const priorityFields = dbSpecificPriorities[currentDbId] || [
+    // Fallback generico se DB non identificato
+    'JTDs', 'Business Model', 'Description', 'Value Proposition', 'Impact'
   ];
   
   // Prima ordina le properties per priorità
@@ -1235,29 +1232,33 @@ async function fetchRecordsByIds(ids) {
       // Fetch page data
       const page = await notion.pages.retrieve({ page_id: id });
       
-      // Get content (limited for performance)
-      const pageContent = await notion.blocks.children.list({
-        block_id: id,
-        page_size: 10
-      });
+      // 🔧 FIXED: NO blocks.children.list() - SOLO properties per performance!
+      // Extract properties e usa quelle per il content
+      const allProperties = extractAllProperties(page);
       
-      const content = pageContent.results
-        .filter(block => 
-          block.type === 'paragraph' && 
-          block.paragraph.rich_text.length > 0
-        )
-        .map(block => block.paragraph.rich_text.map(text => text.plain_text).join(''))
-        .join(' ')
-        .substring(0, 200);
-      
-      // Extract properties
-      const properties = extractAllProperties(page);
+      // Costruisci content dalle properties
+      const contentFields = [
+        'Description', 'Description (ENG)',
+        'Value Proposition', 'Value Proposition (ENG)', 
+        'Value Proposition - Competing Formula',
+        'Impact', 'Impact (ENG)',
+        'JTDs', 'Hacked Trends'
+      ];
+
+      let contentParts = [];
+      for (const field of contentFields) {
+        if (allProperties[field] && allProperties[field].length > 0) {
+          contentParts.push(allProperties[field]);
+        }
+      }
+
+      const content = contentParts.join(' ').substring(0, 200);
       
       results.push({
         id: page.id,
         title: getPageTitle(page),
         content: content,
-        properties: properties,
+        properties: allProperties,
         database: page.parent.database_id,
         fromCache: true
       });
