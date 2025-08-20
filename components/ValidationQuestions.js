@@ -1,24 +1,53 @@
-import React, { useState, useEffect, useMemo, useCallback, memo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { CheckCircle, AlertCircle } from 'lucide-react';
 import { useTranslation } from 'next-i18next';
 
-const ValidationQuestions = memo(function ValidationQuestions({ questions, onComplete }) {
+function ValidationQuestions({ questions, onComplete, resetTrigger, isEditingAnswers = false, submissionCount = 0 }) {
   const { t } = useTranslation('common');
   const [answers, setAnswers] = useState({});
   const [wordCounts, setWordCounts] = useState({});
   const [errors, setErrors] = useState({});
 
+  // Reset dello state quando resetTrigger cambia
+  useEffect(() => {
+    if (resetTrigger) {
+      if (isEditingAnswers) {
+        // Preserve current answers and word counts when editing
+        setErrors({}); // Only clear errors
+      } else {
+        // Fresh start - clear everything
+        setAnswers({});
+        setWordCounts({});
+        setErrors({});
+      }
+    }
+  }, [resetTrigger, isEditingAnswers]);
+
+  // Map delle dimensioni API alle chiavi di traduzione
+  const getTranslatedQuestion = useCallback((dimension) => {
+    const dimensionLower = dimension.toLowerCase();
+    if (dimensionLower.includes('jtbd') || dimensionLower.includes('trends')) {
+      return t('validation.questions.jtbdTrends');
+    }
+    if (dimensionLower.includes('competitive') || dimensionLower.includes('positioning')) {
+      return t('validation.questions.competitive');
+    }
+    if (dimensionLower.includes('tech') || dimensionLower.includes('validation') || dimensionLower.includes('adoption')) {
+      return t('validation.questions.techValidation');
+    }
+    if (dimensionLower.includes('process') || dimensionLower.includes('metrics')) {
+      return t('validation.questions.processMetrics');
+    }
+    if (dimensionLower.includes('partnership') || dimensionLower.includes('activation')) {
+      return t('validation.questions.partnership');
+    }
+    // Fallback per dimensioni non riconosciute
+    return t('validation.placeholder');
+  }, [t]);
+
   // Debug nel terminale del server
   useEffect(() => {
-    console.log('📝 Validation Questions ricevute:', questions?.length || 0, 'domande');
-    if (questions && questions.length > 0) {
-      console.log('Struttura prima domanda:', {
-        dimension: questions[0].dimension,
-        question: questions[0].question?.substring(0, 50) + '...',
-        hasOptions: !!questions[0].options
-      });
-      console.log('Tutte le dimensioni:', questions.map(q => q.dimension));
-    }
+    // Minimal debug logging only
   }, [questions]);
 
   // Memoizza la funzione di calcolo parole per evitare ricreazioni
@@ -29,8 +58,6 @@ const ValidationQuestions = memo(function ValidationQuestions({ questions, onCom
 
   // Handler ottimizzato con useCallback
   const handleTextChange = useCallback((dimension, value) => {
-    console.log(`📝 TextChange: ${dimension}, value length: ${value.length}`);
-    
     // Aggiorna la risposta
     setAnswers(prev => ({
       ...prev,
@@ -39,7 +66,6 @@ const ValidationQuestions = memo(function ValidationQuestions({ questions, onCom
     
     // Calcola il numero di parole
     const wordCount = countWords(value);
-    console.log(`🔢 WordCount for ${dimension}: ${wordCount}`);
     
     setWordCounts(prev => ({
       ...prev,
@@ -65,7 +91,7 @@ const ValidationQuestions = memo(function ValidationQuestions({ questions, onCom
       const answer = answers[q.dimension] || '';
       const wordCount = countWords(answer);
       if (wordCount < 20) {
-        newErrors[q.dimension] = `Minimo 20 parole richieste (attuale: ${wordCount})`;
+        newErrors[q.dimension] = t('validation.minWordsError', { count: wordCount });
       }
     });
 
@@ -74,24 +100,20 @@ const ValidationQuestions = memo(function ValidationQuestions({ questions, onCom
       return;
     }
 
-    console.log('✅ Risposte inviate:', Object.keys(answers).length, 'risposte');
     onComplete(answers);
-  }, [questions, answers, countWords, onComplete]);
+  }, [questions, answers, countWords, t, onComplete]);
 
   // Memoizza il check se tutte le risposte sono valide
   const isFormValid = useMemo(() => {
     if (!questions || questions.length === 0) {
-      console.log('❌ Form invalid: no questions');
       return false;
     }
     
     const valid = questions.every(q => {
       const wordCount = wordCounts[q.dimension] || 0;
-      console.log(`✅ Check ${q.dimension}: ${wordCount} words (need 20)`);
       return wordCount >= 20;
     });
     
-    console.log(`🔍 Form valid: ${valid}`);
     return valid;
   }, [questions, wordCounts]);
 
@@ -106,12 +128,6 @@ const ValidationQuestions = memo(function ValidationQuestions({ questions, onCom
     return <div className="bg-red-100 p-4 rounded">No validation questions received</div>;
   }
 
-  console.log('🎯 RENDERING ValidationQuestions with:', {
-    questionsLength: questions?.length,
-    isFormValid,
-    totalWordCount,
-    wordCounts
-  });
 
   return (
     <div className="bg-white border border-gray-200 rounded-lg p-6">
@@ -127,7 +143,7 @@ const ValidationQuestions = memo(function ValidationQuestions({ questions, onCom
         </p>
         {totalWordCount > 0 && (
           <span className="text-xs text-gray-500">
-            Totale: {totalWordCount} parole
+            {t('validation.totalWords', { count: totalWordCount })}
           </span>
         )}
       </div>
@@ -137,6 +153,7 @@ const ValidationQuestions = memo(function ValidationQuestions({ questions, onCom
           const wordCount = wordCounts[q.dimension] || 0;
           const hasError = !!errors[q.dimension];
           const isValid = wordCount >= 20;
+          
           
           return (
             <div 
@@ -150,7 +167,7 @@ const ValidationQuestions = memo(function ValidationQuestions({ questions, onCom
               <h4 className="font-medium text-gray-900 mb-2">
                 {idx + 1}. {q.dimension}
               </h4>
-              <p className="text-sm text-gray-700 mb-3">{q.question}</p>
+              <p className="text-sm text-gray-700 mb-3">{getTranslatedQuestion(q.dimension)}</p>
               
               {/* TEXTAREA per risposta testuale */}
               <div className="space-y-2">
@@ -167,11 +184,11 @@ const ValidationQuestions = memo(function ValidationQuestions({ questions, onCom
                   <span className={`${
                     isValid ? 'text-green-600 font-medium' : 'text-gray-500'
                   }`}>
-                    {wordCount} parole
+                    {t('validation.wordCount', { count: wordCount })}
                     {isValid && ' ✓'}
                   </span>
                   <span className="text-gray-400">
-                    Minimo 20 parole
+                    {t('validation.minWords')}
                   </span>
                 </div>
               </div>
@@ -197,16 +214,13 @@ const ValidationQuestions = memo(function ValidationQuestions({ questions, onCom
         }`}
       >
         <CheckCircle className="mr-2" size={16} />
-        {t('validation.generateScoring')}
+        {submissionCount === 0 
+          ? t('validation.generateScoring')
+          : `Rigenera Scoring (Iterazione ${submissionCount + 1}/3)`
+        }
       </button>
     </div>
   );
-}, (prevProps, nextProps) => {
-  // Comparazione custom: evita re-render se questions e onComplete non cambiano
-  return (
-    JSON.stringify(prevProps.questions) === JSON.stringify(nextProps.questions) &&
-    prevProps.onComplete === nextProps.onComplete
-  );
-});
+}
 
 export default ValidationQuestions;
