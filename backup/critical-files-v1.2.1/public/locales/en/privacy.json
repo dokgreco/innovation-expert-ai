@@ -1,0 +1,48 @@
+{
+  "backToApp": "Back to Application",
+  "title": "Privacy Policy",
+  "introduction": {
+    "title": "Privacy and Data Usage Policy",
+    "description": "This policy describes how Innovation Expert AI handles data and user privacy. Our priority is to ensure maximum transparency and privacy protection.",
+    "keyPoint": "Key Point",
+    "noDataCollection": "Data entered in the application is NOT acquired, stored, or used in any way by our system."
+  },
+  "dataProcessing": {
+    "title": "How We Process Your Data",
+    "inputData": {
+      "title": "Input Data",
+      "description": "When you enter a query or project description, this data is used exclusively to generate the requested analysis during the current session."
+    },
+    "analysis": {
+      "title": "Analysis Process",
+      "description": "Your data is processed in real-time using our proprietary methodology and case study databases. The analysis is generated instantly and is not saved."
+    },
+    "storage": {
+      "title": "Storage",
+      "description": "We do NOT store any personal data or project information. Each session is completely independent and data does not persist beyond the session duration."
+    }
+  },
+  "thirdParties": {
+    "title": "Third-Party Services",
+    "description": "To provide the analysis service, we use external artificial intelligence services:",
+    "anthropic": {
+      "title": "Anthropic Claude AI",
+      "description": "We use Anthropic's API for AI processing. Data is processed according to Anthropic's privacy policies and is not permanently stored."
+    }
+  },
+  "userRights": {
+    "title": "Your Rights",
+    "noPersonalData": "We do not collect personally identifiable data, so there is no need to request deletion or modifications",
+    "sessionBased": "Each use of the application is session-based and does not maintain persistent history",
+    "transparency": "We maintain complete transparency about processing procedures and methodologies used"
+  },
+  "contact": {
+    "title": "Contact",
+    "description": "For any questions regarding this privacy policy or data usage, you can contact Greco Technologies&Arts through official channels."
+  },
+  "updates": {
+    "title": "Policy Updates",
+    "description": "This policy may be updated periodically to reflect any changes in the service.",
+    "lastUpdated": "Last updated: August 2025"
+  }
+}
