@@ -1,7 +1,42 @@
+// 🔒 F.2.1.5 Enhanced Security: Import Secure Components
+const { SecureScoringEngine } = require('../../utils/secureScoring');
+const { AlgorithmLoader } = require('../../utils/algorithmLoader');
+const { 
+  validateRequest, 
+  encryptResponse, 
+  handleSecurityError,
+  logSecurityEvent 
+} = require('../../utils/environmentSecurity');
+
 // 🔒 F.2.1 Security: Rate Limiting Storage
 const rateLimitMap = new Map();
 
 export default async function handler(req, res) {
+  // 🔒 F.2.1.5 Enhanced Security: Advanced Request Validation
+  try {
+    const validation = validateRequest(req);
+    if (!validation.isValid) {
+      logSecurityEvent('REQUEST_VALIDATION_FAILED', {
+        errors: validation.errors,
+        ip: req.headers['x-forwarded-for'] || 'unknown',
+        userAgent: req.headers['user-agent']
+      });
+      
+      return res.status(403).json(
+        handleSecurityError(new Error(validation.errors.join(', ')), req)
+      );
+    }
+  } catch (securityError) {
+    logSecurityEvent('SECURITY_VALIDATION_ERROR', {
+      error: securityError.message,
+      ip: req.headers['x-forwarded-for'] || 'unknown'
+    });
+    
+    return res.status(500).json(
+      handleSecurityError(securityError, req)
+    );
+  }
+
   // 🔒 F.2.1 Security: CORS Headers + Domain Restriction
   const allowedOrigins = process.env.NODE_ENV === 'development' 
     ? ['http://localhost:3000', 'http://localhost:3001']
@@ -285,7 +320,7 @@ export default async function handler(req, res) {
   try {
     const { analysisData, validationAnswers, language = 'it' } = req.body;
 
-    // Verifica che abbiamo tutti i dati necessari
+    // 🔒 F.2.1.5 Enhanced Security: Validate input data
     if (!analysisData || !validationAnswers) {
       return res.status(400).json({ 
         error: 'Missing required data',
@@ -293,15 +328,27 @@ export default async function handler(req, res) {
       });
     }
 
-    // Analizza le risposte testuali
+    // 🔒 F.2.1.5 Security: Dynamic Algorithm Loading
+    const algorithmComponents = await AlgorithmLoader.loadAlgorithm('latest', 'scoring');
+    const scoringEngine = algorithmComponents.scoringEngine;
+    
+    // 🔒 Log algorithm usage for security monitoring
+    logSecurityEvent('ALGORITHM_LOADED', {
+      version: algorithmComponents.metadata.version,
+      component: algorithmComponents.metadata.component,
+      securityLevel: algorithmComponents.metadata.securityLevel
+    });
+    
+    // 🔒 Calculate secure score using protected algorithms
+    const secureResult = scoringEngine.calculateSecureScore(validationAnswers, analysisData, language);
+    
+    // 🔒 F.2.1.5 Security: Generate Claude-enhanced analysis
+    // Keep Claude API for qualitative analysis enhancement
     const { textAnalysis } = generateTextBasedPrompt(analysisData, validationAnswers);
-
-    // Prepara il prompt calibrato per lo scoring
     const scoringPrompt = createScoringPrompt(analysisData, validationAnswers, textAnalysis, language);
 
-
-    // Chiama Claude API per generare lo scoring
-    const response = await fetch("https://api.anthropic.com/v1/messages", {
+    // 🔒 Parallel processing: Secure scoring + Claude enhancement
+    const claudeResponse = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -317,24 +364,46 @@ export default async function handler(req, res) {
       })
     });
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('Claude API Error:', response.status, errorText);
-      throw new Error(`Claude API error: ${response.status}`);
+    if (!claudeResponse.ok) {
+      const errorText = await claudeResponse.text();
+      console.error('Claude API Error:', claudeResponse.status, errorText);
+      throw new Error(`Claude API error: ${claudeResponse.status}`);
     }
 
-    const data = await response.json();
-    const scoringText = data.content[0].text;
+    const claudeData = await claudeResponse.json();
+    const claudeScoringText = claudeData.content[0].text;
 
-    // Parse della risposta di Claude
-    const parsedScoring = parseScoringResponse(scoringText, language);
+    // 🔒 F.2.1.5 Security: Parse Claude response for risk assessment only
+    const claudeRisks = extractRisksFromClaude(claudeScoringText, language);
 
-    // Ritorna i dati strutturati
-    res.status(200).json({
-      scoring: parsedScoring,
-      rawResponse: scoringText, // Per debug se necessario
+    // 🔒 F.2.1.5 Security: Combine secure scoring with Claude insights
+    const finalScoring = {
+      overall: secureResult.overall,
+      dimensions: secureResult.dimensions,
+      risks: claudeRisks.length > 0 ? claudeRisks : generateDefaultRisks(language),
+      metadata: secureResult.metadata
+    };
+
+    // 🔒 F.2.1.5 Security: Apply response encryption if required
+    const response = {
+      scoring: finalScoring,
+      securityLevel: secureResult.metadata.securityLevel,
+      algorithmVersion: algorithmComponents.metadata.version,
       timestamp: new Date().toISOString()
+    };
+
+    // 🔒 Log successful scoring generation
+    logSecurityEvent('SCORING_GENERATED', {
+      algorithmVersion: algorithmComponents.metadata.version,
+      securityLevel: secureResult.metadata.securityLevel,
+      responseSize: JSON.stringify(response).length
     });
+
+    // 🔒 Apply encryption for production environments
+    const finalResponse = encryptResponse(response);
+    
+    // 🔒 Return secure response
+    res.status(200).json(finalResponse);
 
   } catch (error) {
     console.error('Scoring Generation Error:', error);
@@ -368,6 +437,36 @@ export default async function handler(req, res) {
       technicalDetails: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
+}
+
+// 🔒 F.2.1.5 Security: Helper functions for Claude risk extraction
+function extractRisksFromClaude(claudeText, language = 'it') {
+  try {
+    // Use existing parseScoringResponse logic for risk extraction
+    const parsed = parseScoringResponse(claudeText, language);
+    return parsed.risks || [];
+  } catch (error) {
+    console.error('Risk extraction error:', error);
+    return [];
+  }
+}
+
+function generateDefaultRisks(language = 'it') {
+  const isEnglish = language === 'en';
+  return [
+    {
+      factor: isEnglish ? "Market Validation" : "Validazione Mercato",
+      level: isEnglish ? "Medium" : "Medio",
+      description: isEnglish ? "Validation needed with target market segments" : "Necessaria validazione con segmenti di mercato target",
+      mitigation: isEnglish ? "Conduct pilot tests with early adopters" : "Condurre test pilota con early adopters"
+    },
+    {
+      factor: isEnglish ? "Technology Adoption" : "Adozione Tecnologica", 
+      level: isEnglish ? "Medium" : "Medio",
+      description: isEnglish ? "Implementation complexity may impact adoption" : "Complessità implementativa può impattare l'adozione",
+      mitigation: isEnglish ? "Incremental rollout with user training" : "Rollout incrementale con formazione utenti"
+    }
+  ];
 }
 
 // Funzione helper per parsare la risposta di Claude

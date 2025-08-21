@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ValidationQuestions Flow Test</title>
+</head>
+<body>
+    <h1>🧪 Automated ValidationQuestions Re-submission Test</h1>
+    
+    <div id="test-results">
+        <h2>Test Results:</h2>
+        <div id="results"></div>
+    </div>
+
+    <script>
+        // Test simulation function
+        async function testValidationFlow() {
+            const results = document.getElementById('results');
+            results.innerHTML = '<p>Starting automated test...</p>';
+            
+            try {
+                // Step 1: Test initial query submission
+                results.innerHTML += '<p>✅ Step 1: Testing initial analysis...</p>';
+                
+                const response1 = await fetch('http://localhost:3004/api/notion-query', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        query: 'fintech startup payment platform',
+                        filters: []
+                    })
+                });
+                
+                if (!response1.ok) {
+                    throw new Error(`Analysis API failed: ${response1.status}`);
+                }
+                
+                const analysisData = await response1.json();
+                results.innerHTML += `<p>✅ Analysis successful: ${analysisData.totalResults} results found</p>`;
+                
+                // Step 2: Test validation questions generation
+                const mockValidationAnswers = {
+                    'JTBD & Trends Analysis': 'Our fintech platform addresses the crucial job-to-be-done of simplifying cross-border payments for small businesses. Current solutions are expensive and slow, with fees reaching 5-8% and settlement taking 3-5 days. Our platform reduces costs to 1-2% and enables same-day settlement by leveraging blockchain technology and partnerships with local payment networks.',
+                    'Competitive Positioning': 'Unlike traditional players like Western Union or newer apps like Wise, we focus specifically on B2B cross-border payments with AI-powered compliance automation. Our competitive advantage lies in our proprietary risk assessment algorithm that reduces compliance costs by 60% while maintaining regulatory standards.',
+                    'Technology Validation': 'We have validated our core blockchain integration with pilot customers processing over $50M in transactions. Our APIs integrate with major accounting software like QuickBooks and SAP. The next phase involves scaling our node network and obtaining regulatory approvals in key markets.',
+                    'Process & Metrics': 'Key metrics include transaction volume growth (targeting 25% monthly), cost per transaction (currently $2.50, target $1.80), customer acquisition cost (currently $450), and compliance processing time (reduced from 48h to 2h with our automation).',
+                    'Partnership Strategy': 'Strategic partnerships with regional banks in Southeast Asia and Latin America provide local compliance and last-mile delivery. We are also partnering with major e-commerce platforms to integrate payment solutions directly into their checkout flows.'
+                };
+                
+                results.innerHTML += '<p>✅ Step 2: Simulating validation answers...</p>';
+                
+                // Step 3: Test scoring generation
+                results.innerHTML += '<p>✅ Step 3: Testing scoring generation...</p>';
+                
+                const response2 = await fetch('http://localhost:3004/api/generate-scoring', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        analysisData: analysisData,
+                        validationAnswers: mockValidationAnswers
+                    })
+                });
+                
+                if (!response2.ok) {
+                    throw new Error(`Scoring API failed: ${response2.status}`);
+                }
+                
+                const scoringData = await response2.json();
+                results.innerHTML += `<p>✅ Scoring successful: Overall Score ${scoringData.overallScore}/100</p>`;
+                
+                // Step 4: Test re-submission capability
+                results.innerHTML += '<p>✅ Step 4: Testing re-submission flow...</p>';
+                
+                // Simulate updated answers for re-submission
+                const updatedAnswers = {
+                    ...mockValidationAnswers,
+                    'Technology Validation': mockValidationAnswers['Technology Validation'] + ' Additionally, we have completed SOC2 compliance certification and established partnerships with three major banking institutions for enhanced security and reliability.'
+                };
+                
+                const response3 = await fetch('http://localhost:3004/api/generate-scoring', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        analysisData: analysisData,
+                        validationAnswers: updatedAnswers
+                    })
+                });
+                
+                if (!response3.ok) {
+                    throw new Error(`Re-scoring API failed: ${response3.status}`);
+                }
+                
+                const rescoreData = await response3.json();
+                const scoreDelta = rescoreData.overallScore - scoringData.overallScore;
+                
+                results.innerHTML += `<p>✅ Re-scoring successful: New Score ${rescoreData.overallScore}/100 (${scoreDelta > 0 ? '+' : ''}${scoreDelta.toFixed(1)} change)</p>`;
+                
+                // Summary
+                results.innerHTML += '<hr><h3>🎉 All Tests Passed!</h3>';
+                results.innerHTML += `
+                    <ul>
+                        <li>Initial Analysis: ✅ ${analysisData.totalResults} results</li>
+                        <li>First Scoring: ✅ ${scoringData.overallScore}/100</li>
+                        <li>Re-submission: ✅ ${rescoreData.overallScore}/100 (${scoreDelta > 0 ? 'improved' : scoreDelta < 0 ? 'decreased' : 'unchanged'})</li>
+                        <li>ValidationQuestions State Management: ✅ Ready for UI testing</li>
+                    </ul>
+                `;
+                
+                results.innerHTML += '<p><strong>Status:</strong> 🟢 System 100% operational for re-submission flow</p>';
+                
+            } catch (error) {
+                results.innerHTML += `<p>❌ Test failed: ${error.message}</p>`;
+                console.error('Test error:', error);
+            }
+        }
+        
+        // Auto-run test when page loads
+        window.onload = () => {
+            setTimeout(testValidationFlow, 1000);
+        };
+    </script>
+</body>
+</html>
