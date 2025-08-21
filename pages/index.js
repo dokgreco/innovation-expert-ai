@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, lazy, Suspense } from 'react';
-import { SecureLogger } from '../utils/secureLogger';
+import { SecureLogger } from '../utils/secureLoggerClient';
 import { 
   Send, Bot, User, Database, Brain, Lightbulb, TrendingUp, 
   Filter, History, Star, Search, FileText,
