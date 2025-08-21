@@ -235,10 +235,20 @@ export default function Istruzioni() {
       {/* Footer */}
       <div className="bg-white border-t border-gray-200 mt-12">
         <div className="max-w-4xl mx-auto px-4 py-6 text-center">
-          <p className="text-gray-600">
+          <p className="text-gray-600 mb-4">
             {t('instructions.footer')}
           </p>
-          <p className="text-sm text-gray-500 mt-2">
+          <div className="flex items-center justify-center gap-4 text-sm text-gray-500 mb-2">
+            <span>{t('instructions.copyright')}</span>
+            <span>•</span>
+            <button 
+              onClick={() => router.push('/privacy')}
+              className="text-indigo-600 hover:text-indigo-800 underline"
+            >
+              {t('instructions.privacyLink')}
+            </button>
+          </div>
+          <p className="text-sm text-gray-500">
             {t('instructions.alphaNote')}
           </p>
         </div>

@@ -1272,6 +1272,24 @@ case 'partnership':
         )}
       </div>
 
+      {/* Footer */}
+      <div className="border-t border-gray-200 bg-white">
+        <div className="max-w-4xl mx-auto px-4 py-4 text-center">
+          <p className="text-sm text-gray-600 mb-2">
+            {t('instructions.footer')}
+          </p>
+          <div className="flex items-center justify-center gap-4 text-xs text-gray-500">
+            <span>{t('instructions.copyright')}</span>
+            <span>•</span>
+            <button 
+              onClick={() => router.push('/privacy')}
+              className="text-indigo-600 hover:text-indigo-800 underline"
+            >
+              {t('instructions.privacyLink')}
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
