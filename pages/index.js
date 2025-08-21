@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import { SecureLogger } from '../utils/secureLoggerClient';
+import { AlphaTracker } from '../utils/alphaTracking';
 import { 
   Send, Bot, User, Database, Brain, Lightbulb, TrendingUp, 
   Filter, History, Star, Search, FileText,
@@ -219,6 +220,11 @@ const deepDiveSections = [
     scrollToBottom();
   }, [messages]);
 
+  // 📊 Track alpha testing: device info on first load
+  useEffect(() => {
+    AlphaTracker.trackDeviceInfo();
+  }, []);
+
   const handleQuickPrompt = (promptData) => {
     setInput(promptData.prompt);
     handleSubmit(null, promptData.prompt);
@@ -337,6 +343,10 @@ if (!stepHistory.includes(2)) {
     try {
       SecureLogger.dev('🚀 Query to Notion API initiated');
       
+      // 📊 Track alpha testing: query submission
+      AlphaTracker.trackQuerySubmission(currentInput, selectedFilters);
+      const analysisStartTime = Date.now();
+      
       // Step 1: Query Notion databases
       const notionResponse = await fetch('/api/notion-query', {
         method: 'POST',
@@ -389,6 +399,11 @@ if (!stepHistory.includes(2)) {
         throw new Error(result.error);
       }
 
+      // 📊 Track alpha testing: analysis completed
+      const analysisDuration = Date.now() - analysisStartTime;
+      const hasValidationQuestions = !!(result.parsedSections?.validationQuestions?.length);
+      AlphaTracker.trackAnalysisCompleted(analysisDuration, hasValidationQuestions);
+
       const assistantMessage = {
   id: Date.now().toString(),
   role: 'assistant',
@@ -414,6 +429,15 @@ SecureLogger.dev('🎯 Backend result received:', {
       console.error('❌ Errore completo:', error);
       setIsAnalyzing(false);
       setIsLoading(false);
+      
+      // 📊 Track alpha testing: API errors
+      if (error.message.includes('Claude API error')) {
+        const [, statusCode] = error.message.match(/(\d{3})/) || [];
+        AlphaTracker.trackAPIError('/api/claude-analysis', statusCode, error.message);
+      } else if (error.message.includes('Notion API error')) {
+        const [, statusCode] = error.message.match(/(\d{3})/) || [];
+        AlphaTracker.trackAPIError('/api/notion-query', statusCode, error.message);
+      }
       
       const errorMessage = {
         id: (Date.now() + 2).toString(),
@@ -574,7 +598,12 @@ SecureLogger.dev('🎯 Backend result received:', {
             <div className="flex items-center">
               <button
                 onClick={() => {
+                  const oldLocale = router.locale;
                   const newLocale = router.locale === 'it' ? 'en' : 'it';
+                  
+                  // 📊 Track alpha testing: language switch
+                  AlphaTracker.trackLanguageSwitch(oldLocale, newLocale);
+                  
                   const { pathname, asPath, query } = router;
                   router.push({ pathname, query }, asPath, { locale: newLocale });
                 }}
@@ -922,6 +951,12 @@ case 'partnership':
                           onComplete={async (answers) => {
                             SecureLogger.dev('Validation answers count:', Object.keys(answers).length);
                             
+                            // 📊 Track alpha testing: validation attempt
+                            const totalWords = Object.values(answers).reduce((total, answer) => {
+                              return total + (answer ? answer.split(' ').length : 0);
+                            }, 0);
+                            AlphaTracker.trackValidationAttempt(Object.keys(answers).length, totalWords);
+                            
                             // Salva le risposte
                             setValidationAnswers(answers);
                             
@@ -962,6 +997,13 @@ case 'partnership':
                               
                               if (previousScore !== null) {
                                 scoreDelta = currentScore - previousScore;
+                              }
+                              
+                              // 📊 Track alpha testing: scoring generated
+                              if (newSubmissionCount === 1) {
+                                AlphaTracker.trackScoringGenerated(currentScore, newSubmissionCount);
+                              } else {
+                                AlphaTracker.trackRescoringUsed(previousScore, currentScore, newSubmissionCount);
                               }
                               
                               // Salva nella history
