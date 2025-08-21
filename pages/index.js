@@ -990,9 +990,18 @@ case 'partnership':
                               
                               const result = await response.json();
                               
+                              // 🔒 F.2.1.5 Security: Handle encrypted response in production
+                              const actualData = result.encrypted ? result.data : result;
+                              
+                              // 🔒 Validate scoring data structure
+                              if (!actualData.scoring?.overall?.score) {
+                                console.error('❌ Invalid scoring structure:', actualData);
+                                throw new Error('Invalid scoring data received from server');
+                              }
+                              
                               // 🚀 RE-SUBMISSION LOGIC - Salva nella history e calcola delta
                               const newSubmissionCount = submissionCount + 1;
-                              const currentScore = result.scoring.overall.score;
+                              const currentScore = actualData.scoring.overall.score;
                               let scoreDelta = null;
                               
                               if (previousScore !== null) {
@@ -1010,7 +1019,7 @@ case 'partnership':
                               const scoringRecord = {
                                 submissionNumber: newSubmissionCount,
                                 score: currentScore,
-                                rating: result.scoring.overall.rating,
+                                rating: actualData.scoring.overall.rating,
                                 delta: scoreDelta,
                                 timestamp: new Date(),
                                 answers: answers
@@ -1037,7 +1046,7 @@ case 'partnership':
                                   ? t('scoring.recalculated', { iteration: newSubmissionCount })
                                   : t('scoring.generated'),
                                 timestamp: new Date(),
-                                scoringData: result.scoring,
+                                scoringData: actualData.scoring,
                                 scoreDelta: scoreDelta,
                                 submissionNumber: newSubmissionCount,
                                 isScoring: true

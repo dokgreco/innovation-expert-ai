@@ -58,14 +58,14 @@ function ValidationQuestions({ questions, onComplete, resetTrigger, isEditingAns
 
   // Handler ottimizzato con useCallback
   const handleTextChange = useCallback((dimension, value) => {
-    // Aggiorna la risposta
+    // Calcola il numero di parole immediatamente
+    const wordCount = countWords(value);
+    
+    // Aggiorna tutti gli stati in batch per evitare inconsistenze
     setAnswers(prev => ({
       ...prev,
       [dimension]: value
     }));
-    
-    // Calcola il numero di parole
-    const wordCount = countWords(value);
     
     setWordCounts(prev => ({
       ...prev,
@@ -73,14 +73,16 @@ function ValidationQuestions({ questions, onComplete, resetTrigger, isEditingAns
     }));
 
     // Rimuovi errore se esiste e il conteggio è valido
-    setErrors(prev => {
-      if (prev[dimension] && wordCount >= 20) {
-        const newErrors = { ...prev };
-        delete newErrors[dimension];
-        return newErrors;
-      }
-      return prev;
-    });
+    if (wordCount >= 20) {
+      setErrors(prev => {
+        if (prev[dimension]) {
+          const newErrors = { ...prev };
+          delete newErrors[dimension];
+          return newErrors;
+        }
+        return prev;
+      });
+    }
   }, [countWords]);
 
   // Handler submit ottimizzato
@@ -109,13 +111,15 @@ function ValidationQuestions({ questions, onComplete, resetTrigger, isEditingAns
       return false;
     }
     
+    // Verifica che tutti i field abbiano sia testo che conteggio parole valido
     const valid = questions.every(q => {
+      const answer = answers[q.dimension] || '';
       const wordCount = wordCounts[q.dimension] || 0;
-      return wordCount >= 20;
+      return answer.trim().length > 0 && wordCount >= 20;
     });
     
     return valid;
-  }, [questions, wordCounts]);
+  }, [questions, wordCounts, answers]);
 
   // Memoizza il conteggio totale delle parole
   const totalWordCount = useMemo(() => {

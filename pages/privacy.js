@@ -80,9 +80,62 @@ export default function Privacy() {
               <h3 className="text-xl font-semibold text-gray-900">{t('thirdParties.title')}</h3>
             </div>
             <p className="text-gray-700 mb-4">{t('thirdParties.description')}</p>
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-              <h4 className="font-semibold text-blue-800 mb-2">{t('thirdParties.anthropic.title')}</h4>
-              <p className="text-blue-700 text-sm">{t('thirdParties.anthropic.description')}</p>
+            <div className="space-y-4">
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <h4 className="font-semibold text-blue-800 mb-2">{t('thirdParties.anthropic.title')}</h4>
+                <p className="text-blue-700 text-sm">{t('thirdParties.anthropic.description')}</p>
+              </div>
+              
+              {/* New Analytics Section */}
+              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                <h4 className="font-semibold text-green-800 mb-2">
+                  {router.locale === 'en' ? 'Vercel Analytics - System Optimization' : 'Vercel Analytics - Ottimizzazione Sistema'}
+                </h4>
+                <p className="text-green-700 text-sm mb-3">
+                  {router.locale === 'en' 
+                    ? 'We use Vercel Analytics ONLY to verify system functionality and optimize the user experience. This is technical monitoring, not user profiling.'
+                    : 'Utilizziamo Vercel Analytics SOLO per verificare il funzionamento del sistema e ottimizzare l\'esperienza utente. Si tratta di monitoraggio tecnico, non profilazione.'
+                  }
+                </p>
+                <div className="space-y-2 text-xs text-green-700">
+                  <div className="flex items-start gap-2">
+                    <span className="text-green-600">•</span>
+                    <span>
+                      {router.locale === 'en' 
+                        ? 'NO personal information collected' 
+                        : 'NO informazioni personali raccolte'
+                      }
+                    </span>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <span className="text-green-600">•</span>
+                    <span>
+                      {router.locale === 'en' 
+                        ? 'Anonymous usage patterns for system improvement' 
+                        : 'Pattern di utilizzo anonimi per miglioramento sistema'
+                      }
+                    </span>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <span className="text-green-600">•</span>
+                    <span>
+                      {router.locale === 'en' 
+                        ? 'Performance monitoring and error detection' 
+                        : 'Monitoraggio performance e rilevazione errori'
+                      }
+                    </span>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <span className="text-green-600">•</span>
+                    <span>
+                      {router.locale === 'en' 
+                        ? 'GDPR compliant - data minimization principle' 
+                        : 'GDPR compliant - principio minimizzazione dati'
+                      }
+                    </span>
+                  </div>
+                </div>
+              </div>
             </div>
           </section>
 
