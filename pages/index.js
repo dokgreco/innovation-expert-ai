@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, lazy, Suspense } from 'react';
+import { SecureLogger } from '../utils/secureLogger';
 import { 
   Send, Bot, User, Database, Brain, Lightbulb, TrendingUp, 
   Filter, History, Star, Search, FileText,
@@ -334,7 +335,7 @@ if (!stepHistory.includes(2)) {
 }
 
     try {
-      console.log('🚀 Invio query a Notion API:', currentInput);
+      SecureLogger.dev('🚀 Query to Notion API initiated');
       
       // Step 1: Query Notion databases
       const notionResponse = await fetch('/api/notion-query', {
@@ -351,13 +352,13 @@ if (!stepHistory.includes(2)) {
       }
       
       const notionData = await notionResponse.json();
-      console.log('📊 Dati Notion ricevuti:', notionData);
+      SecureLogger.dev('📊 Notion data received - count:', notionData?.length || 0);
       
       setIsAnalyzing(false);
       setIsLoading(true);
 
       // Step 2: Send to Claude AI with Notion context
-      console.log('🧠 Invio dati a Claude API...');
+      SecureLogger.dev('🧠 Sending data to Claude API...');
       
       const claudeResponse = await fetch('/api/claude-analysis', {
         method: 'POST',
@@ -382,7 +383,7 @@ if (!stepHistory.includes(2)) {
       }
 
       const result = await claudeResponse.json();
-      console.log('✅ Risposta Claude ricevuta:', result);
+      SecureLogger.dev('✅ Claude response received - sections:', result?.parsedSections?.length || 0);
 
       if (result.error) {
         throw new Error(result.error);
@@ -401,13 +402,12 @@ if (!stepHistory.includes(2)) {
   }
 };
 // 🔍 DEBUG: Verifica cosa arriva al frontend
-console.log('🎯 RESULT DAL BACKEND:', {
+SecureLogger.dev('🎯 Backend result received:', {
   hasAnalysis: !!result.analysis,
   hasParsedSections: !!result.parsedSections,
-  validationQuestions: result.parsedSections?.validationQuestions || 'non trovate',
   questionCount: result.parsedSections?.validationQuestions?.length || 0
 });
-      console.log('📝 Aggiungendo messaggio assistant:', assistantMessage);
+      SecureLogger.dev('📝 Adding assistant message');
       setMessages(prev => [...prev, assistantMessage]);
 
     } catch (error) {
@@ -423,7 +423,7 @@ console.log('🎯 RESULT DAL BACKEND:', {
         isError: true
       };
       
-      console.log('📝 Aggiungendo messaggio errore:', errorMessage);
+      SecureLogger.dev('📝 Adding error message');
       setMessages(prev => [...prev, errorMessage]);
     } finally {
       setIsLoading(false);
@@ -920,7 +920,7 @@ case 'partnership':
                           isEditingAnswers={isEditingAnswers}
                           submissionCount={submissionCount}
                           onComplete={async (answers) => {
-                            console.log('Validation answers:', answers);
+                            SecureLogger.dev('Validation answers count:', Object.keys(answers).length);
                             
                             // Salva le risposte
                             setValidationAnswers(answers);
@@ -979,7 +979,7 @@ case 'partnership':
                               setPreviousScore(currentScore);
                               setIsEditingAnswers(false);
                               
-                              console.log('💾 Scoring saved to history:', scoringRecord);
+                              SecureLogger.dev('💾 Scoring saved to history');
                               
                               // Passa automaticamente a Step 4
                               setCurrentStep(4);
@@ -1131,7 +1131,7 @@ case 'partnership':
                       {submissionCount < 3 ? (
                         <button
                           onClick={() => {
-                            console.log('🔄 RE-SCORE button clicked - resetting validation, iteration:', submissionCount + 1);
+                            SecureLogger.dev('🔄 RE-SCORE button clicked - iteration:', submissionCount + 1);
                             setCurrentStep(3);
                             setStepHistory(prev => [...prev, 3]);
                             setValidationResetTrigger(prev => prev + 1);

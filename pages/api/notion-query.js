@@ -4,6 +4,7 @@
 
 import { Client } from '@notionhq/client';
 import { setSecureCache, getSecureCache, hasValidCache } from '../../utils/secureCache';
+import { SecureLogger } from '../../utils/secureLogger';
 
 // 🔒 F.2.1 Security: Rate Limiting Storage
 const rateLimitMap = new Map();
@@ -22,8 +23,8 @@ const databases = [
 
 // NUOVO: Funzione per fetch completo con pagination
 async function fetchAllFromDB(dbId, dbName, searchFilter = null) {
-  console.log(`🔍 Fetching ALL records from ${dbName}...`);
-  console.log(`📌 Database ID being queried: ${dbId}`);
+  SecureLogger.dev(`🔍 Fetching records from DB`);
+  SecureLogger.dev(`📌 Database query initiated`);
 if (!dbId || dbId === 'undefined') {
   console.error(`❌ ERROR: Database ID is invalid for ${dbName}!`);
   return [];
@@ -46,10 +47,10 @@ if (!dbId || dbId === 'undefined') {
     startCursor = response.next_cursor;
     pageCount++;
     
-    console.log(`📄 Page ${pageCount}: ${response.results.length} records`);
+    SecureLogger.dev(`📄 Page ${pageCount}: ${response.results.length} records`);
   }
   
-  console.log(`✅ ${dbName}: ${allRecords.length} total records fetched`);
+  SecureLogger.dev(`✅ DB records fetched: ${allRecords.length}`);
   return allRecords;
 }
 // TASK 6: Test suite automatizzato - COMPLETO
@@ -70,11 +71,11 @@ const testQueries = [
 async function runTestSuite() {
   if (process.env.NODE_ENV !== 'development') return;
   
-  console.log('\n🧪 === RUNNING TEST SUITE ===');
+  SecureLogger.dev('\n🧪 === RUNNING TEST SUITE ===');
   const results = [];
   
   for (const query of testQueries.slice(0, 3)) { // Test solo prime 3 per velocità
-    console.log(`\n📝 Testing: "${query}"`);
+    SecureLogger.dev(`\n📝 Testing query`);
     // Qui metteremo logica di test
     results.push({
       query,
@@ -82,7 +83,7 @@ async function runTestSuite() {
     });
   }
   
-  console.log('\n✅ TEST SUITE COMPLETE');
+  SecureLogger.dev('\n✅ TEST SUITE COMPLETE');
   return results;
 }
 export default async function handler(req, res) {
@@ -140,11 +141,11 @@ export default async function handler(req, res) {
     const cacheKey = `query_${query.toLowerCase().replace(/\s+/g, '_').substring(0, 50)}`;
     
     // Check secure cache first
-    console.log(`🔍 [DEBUG] Looking for cache with key: ${cacheKey}`);
+    SecureLogger.dev(`🔍 [DEBUG] Looking for cache`);
     const cachedData = getSecureCache(cacheKey);
 if (cachedData && cachedData.length > 0) {
-  console.log(`✅ [SecureCache] Cache hit for: ${query}`);
-  console.log(`📊 [SecureCache] Using ${cachedData.length} cached records (instant)`);
+  SecureLogger.dev(`✅ [SecureCache] Cache hit`);
+  SecureLogger.dev(`📊 [SecureCache] Using ${cachedData.length} cached records`);
   
   // USA DIRETTAMENTE I DATI CACHED, NO FETCH!
   const cachedResults = cachedData;
@@ -182,11 +183,11 @@ if (cachedData && cachedData.length > 0) {
       });
     }
     
-    console.log(`❌ [SecureCache] Cache miss for: ${query}`);
+    SecureLogger.dev(`❌ [SecureCache] Cache miss`);
         
     // 🚨 DEBUG: Log della query ricevuta
-    console.log('🔍 Query ricevuta:', query);
-    console.log('📋 Filtri ricevuti:', filters);
+    SecureLogger.dev('🔍 Query received');
+    SecureLogger.dev('📋 Filters received:', filters?.length || 0);
     
     let allResults = [];
     let totalResults = 0;

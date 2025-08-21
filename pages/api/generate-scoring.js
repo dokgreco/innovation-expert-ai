@@ -7,6 +7,7 @@ const {
   handleSecurityError,
   logSecurityEvent 
 } = require('../../utils/environmentSecurity');
+const { SecureLogger } = require('../../utils/secureLogger');
 
 // 🔒 F.2.1 Security: Rate Limiting Storage
 const rateLimitMap = new Map();
@@ -131,7 +132,7 @@ export default async function handler(req, res) {
     const gaps = identifyGaps(answer, specificityScore, alignmentScore, completenessScore, actionabilityScore);
     const strengths = identifyStrengths(answer, specificityScore, alignmentScore, completenessScore, actionabilityScore);
     
-    console.log(`📊 Advanced scoring for ${dimension}:`, {
+    SecureLogger.dev(`📊 Advanced scoring completed:`, {
       totalScore,
       breakdown: { specificityScore, alignmentScore, completenessScore, actionabilityScore },
       gaps: gaps.length,
@@ -505,16 +506,16 @@ function parseScoringResponse(text, language = 'it') {
 
     // Estrai risk assessment con logging più dettagliato
     const risks = [];
-    console.log('🔍 PARSING RISKS FROM TEXT:');
-    console.log('Text length:', text.length);
-    console.log('Risk section preview:', text.substring(text.indexOf('RISK ASSESSMENT'), text.indexOf('RISK ASSESSMENT') + 500));
+    SecureLogger.dev('🔍 Parsing risks from text:');
+    SecureLogger.dev('Text length:', text.length);
+    SecureLogger.dev('Risk section found:', text.includes('RISK ASSESSMENT'));
     
     // Prima prova con regex specifica
     const riskRegex = /Rischio\s*\d+:[^]*?Fattore:\s*([^\\n]+)[^]*?Livello:\s*(\w+)[^]*?Descrizione:\s*([^\\n]+)[^]*?Mitigazione:\s*([^\\n]+)/gi;
     let riskMatch;
     
     while ((riskMatch = riskRegex.exec(text)) !== null && risks.length < 3) {
-      console.log('📝 Risk match found:', riskMatch);
+      SecureLogger.dev('📝 Risk match found');
       risks.push({
         factor: riskMatch[1].trim(),
         level: riskMatch[2].trim(),

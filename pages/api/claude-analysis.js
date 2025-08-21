@@ -1,4 +1,5 @@
 // ========== HELPER FUNCTIONS PER METODOLOGIA 3-STEP ==========
+const { SecureLogger } = require('../../utils/secureLogger');
 
 // Language-specific instructions function
 function getLanguageInstructions(locale = 'it') {
@@ -302,7 +303,7 @@ export default async function handler(req, res) {
 
     // 🔧 OTTIMIZZAZIONE CONTEXT PER CLAUDE
     const optimizedData = optimizeContextForClaude(notionData);
-    console.log('🎯 Dati ottimizzati per Claude:', {
+    SecureLogger.dev('🎯 Data optimized for Claude:', {
       verticals: optimizedData.verticals.top3.length,
       cases: optimizedData.cases.top5.length,
       size: JSON.stringify(optimizedData).length + ' chars'
@@ -341,9 +342,9 @@ export default async function handler(req, res) {
     const analysis = data.content[0].text;
     
     // 🔍 DEBUG: Verifica output Claude
-    console.log('📊 CLAUDE RAW RESPONSE LENGTH:', analysis.length);
-    console.log('🔍 CERCA PARTE 2:', analysis.includes('PARTE 2'));
-    console.log('📝 ULTIMI 500 CARATTERI:', analysis.substring(analysis.length - 500));
+    SecureLogger.dev('📊 Claude response length:', analysis.length);
+    SecureLogger.dev('🔍 Contains PARTE 2:', analysis.includes('PARTE 2'));
+    SecureLogger.dev('📝 Response preview available');
 
     // FUNZIONE extractQuestions SPOSTATA QUI DENTRO
     function extractQuestions(text) {
