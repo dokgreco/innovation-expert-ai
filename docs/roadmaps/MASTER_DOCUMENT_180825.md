@@ -1,9 +1,9 @@
 # 🚀 INNOVATION EXPERT AI - KNOWLEDGE BASE MASTER DOCUMENT
 **Data Consolidamento:** 21 Agosto 2025  
-**Versione Sistema:** F.2.1.5  
-**Completamento:** 100% (Core) + Advanced Scoring + Re-submission + Multilingual System + Notion Query Optimized + Enterprise Security  
+**Versione Sistema:** F.2.1.5 + Critical Production Fixes  
+**Completamento:** 100% (Core) + Advanced Scoring + Re-submission + Multilingual System + Notion Query Optimized + Enterprise Security + Production Stability  
 **Branch Production:** main  
-**Status:** PRODUCTION READY + ENTERPRISE SECURITY IMPLEMENTED + COMPLETE IP PROTECTION ACTIVE
+**Status:** PRODUCTION READY + ENTERPRISE SECURITY IMPLEMENTED + COMPLETE IP PROTECTION ACTIVE + CRITICAL FIXES DEPLOYED
 
 ---
 
@@ -21,12 +21,15 @@
 - **NUOVO v1.2: Complete Multilingual System**: Supporto completo IT/EN per tutti i componenti ✅
 - **NUOVO v1.2.1: Critical Notion Query Optimization**: Performance 13x + DB-specific properties + acceptance criteria fix ✅
 - **🛡️ NUOVO F.2.1.5: Enterprise Security Architecture**: Secure Scoring Engine + Algorithm Protection + Environment-based Security ✅
+- **🚨 NUOVO: Critical Production Fixes**: Scoring API security handling + Validation enhancements + Alpha Testing Guide + Privacy transparency ✅
 - **Performance eccellenti**: 19s prima query, 2s con cache, <50ms security overhead
 - **Production URLs attive**: 
   - IT: https://innovation-expert-ai-sana.vercel.app ✅
   - EN: https://innovation-expert-ai-sana.vercel.app/en ✅
   - Privacy: https://innovation-expert-ai-sana.vercel.app/privacy ✅
+  - Instructions: https://innovation-expert-ai-sana.vercel.app/istruzioni ✅
 - **Security Features Attive**: Algorithm obfuscation, Response encryption (prod), Rate limiting, IP protection
+- **Production Stability**: Critical API fixes, Enhanced validation, Multilingual alpha guide, Analytics transparency
 - **Prossimo**: Strategic backlog based on user priorities
 
 ---
@@ -366,6 +369,47 @@ git checkout -b emergency-recovery
 - **Sistema 100% Funzionante:** F.1 + F.2.1 operativi
 - **Production Ready:** IT/EN URLs attive
 - **Zero Risk:** Rollback immediato possibile
+
+---
+
+## 🥇 REGOLA D'ORO - BRANCH WORKFLOW
+
+### ⚠️ **REGOLA FONDAMENTALE PER TUTTI I DEVELOPMENT**
+**"SEMPRE, RIPETO SEMPRE, lavorare su branch dedicati per FIX e miglioramenti"**
+
+#### **📋 WORKFLOW OBBLIGATORIO:**
+```bash
+# ✅ CORRETTO - Per ogni fix/feature/improvement
+git checkout -b feature/nome-funzionalita
+git checkout -b hotfix/fix-specifico  
+git checkout -b docs/aggiornamento-specifico
+
+# ❌ SBAGLIATO - Mai lavorare direttamente su main
+git checkout main
+# modifiche dirette su main = VIETATO
+```
+
+#### **🎯 BENEFICI BRANCH WORKFLOW:**
+- **Isolation**: Modifiche isolate e sicure
+- **Review Process**: Possibilità di review prima del merge
+- **Rollback**: Facilità di rollback se necessario
+- **History**: Git history pulita e tracciabile
+- **Collaboration**: Team work senza conflitti
+- **Testing**: Testing separato per ogni modifica
+
+#### **📊 ESEMPI BRANCH NAMING:**
+- `hotfix/production-critical-fixes` - Fix critici production
+- `feature/alpha-testing-guide` - Nuove funzionalità  
+- `docs/update-master-documentation` - Aggiornamenti documentazione
+- `security/f215-enhancements` - Miglioramenti security
+- `performance/api-optimization` - Ottimizzazioni performance
+
+#### **⚡ MERGE PROCESS:**
+1. **Branch creation** → **Development** → **Local testing** → **Commit** → **Merge to main** → **Production deploy**
+2. **ALWAYS** test sul branch prima del merge
+3. **NEVER** commit direttamente su main senza branch
+
+**Questa regola è stata stabilita dopo l'esperienza con i critical production fixes del 21 Agosto 2025 ed è ora POLICY OBBLIGATORIA per ogni tipo di modifica al sistema.**
 
 ---
 
