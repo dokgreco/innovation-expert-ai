@@ -4,7 +4,7 @@ import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
 import { useRouter } from 'next/router';
 import { 
   Brain, Database, Target, Rocket, BarChart3, CheckCircle,
-  ArrowLeft, Users, Zap, FileText, Award, MessageCircle
+  ArrowLeft, Users, Zap, FileText, Award, MessageCircle, Lock, Eye, Shield
 } from 'lucide-react';
 
 export default function Istruzioni() {
@@ -43,6 +43,33 @@ export default function Istruzioni() {
             <p className="text-lg text-gray-600">
               {t('instructions.subtitle')}
             </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Privacy Assurance Box */}
+      <div className="max-w-4xl mx-auto px-4 -mt-4 mb-8">
+        <div className="bg-gradient-to-r from-green-50 to-blue-50 border border-green-200 rounded-lg p-4">
+          <div className="flex items-center justify-between flex-wrap gap-4">
+            <div className="flex items-center gap-3">
+              <div className="bg-green-100 p-2 rounded-full">
+                <Lock className="text-green-600" size={20} />
+              </div>
+              <div>
+                <h3 className="font-semibold text-green-900">
+                  🛡️ {router.locale === 'en' ? 'Your Privacy is Guaranteed' : 'La Tua Privacy è Garantita'}
+                </h3>
+                <p className="text-sm text-green-800 mt-1">
+                  {router.locale === 'en' 
+                    ? 'We never save your data. Analysis based only on public and anonymized sources.'
+                    : 'Non salviamo mai i tuoi dati. Analisi basate solo su fonti pubbliche e anonimizzate.'
+                  }
+                </p>
+              </div>
+            </div>
+            <a href="/privacy" className="text-green-600 hover:text-green-800 underline text-sm font-medium whitespace-nowrap">
+              {router.locale === 'en' ? 'Complete information →' : 'Informativa completa →'}
+            </a>
           </div>
         </div>
       </div>
@@ -213,11 +240,195 @@ export default function Istruzioni() {
             </div>
           </section>
 
-          {/* Alpha Testing Guide */}
+          {/* Data Source Transparency Section */}
+          <div className="methodology-section mb-8">
+            <div className="flex items-center gap-3 mb-6">
+              <Database className="text-indigo-600" size={24} />
+              <h2 className="text-2xl font-bold text-gray-900">
+                📊 {router.locale === 'en' ? 'Transparency on Our Data' : 'Trasparenza sui Nostri Dati'}
+              </h2>
+            </div>
+            
+            <div className="bg-gray-50 p-6 rounded-lg border border-gray-200 mb-6">
+              <h3 className="font-bold mb-4 text-gray-900">
+                {router.locale === 'en' ? 'The Proprietary Database (200+ Case Histories)' : 'Il Database Proprietario (200+ Case Histories)'}
+              </h3>
+              
+              <div className="grid md:grid-cols-2 gap-6 mb-4">
+                <div>
+                  <h4 className="font-semibold text-gray-800 mb-2">
+                    🔍 {router.locale === 'en' ? 'What It Contains:' : 'Cosa Contiene:'}
+                  </h4>
+                  <ul className="space-y-1 text-sm text-gray-700">
+                    <li>• {router.locale === 'en' ? 'Best practices from official press releases' : 'Best practices da comunicati stampa ufficiali'}</li>
+                    <li>• {router.locale === 'en' ? 'Success patterns from public company reports' : 'Pattern di successo da report pubblici aziendali'}</li>
+                    <li>• {router.locale === 'en' ? 'Aggregate benchmark metrics by sector' : 'Metriche benchmark aggregate per settore'}</li>
+                    <li>• {router.locale === 'en' ? 'Methodological frameworks from specialized literature' : 'Framework metodologici da letteratura specializzata'}</li>
+                  </ul>
+                </div>
+                <div>
+                  <h4 className="font-semibold text-gray-800 mb-2">
+                    🛡️ {router.locale === 'en' ? 'Collection Principles:' : 'Principi di Raccolta:'}
+                  </h4>
+                  <ul className="space-y-1 text-sm text-gray-700">
+                    <li>• <span className="text-green-600">✓</span> {router.locale === 'en' ? 'Only verified public sources' : 'Solo fonti pubbliche verificate'}</li>
+                    <li>• <span className="text-green-600">✓</span> {router.locale === 'en' ? 'Total data anonymization' : 'Anonimizzazione totale dei dati'}</li>
+                    <li>• <span className="text-green-600">✓</span> {router.locale === 'en' ? 'Zero sensitive information' : 'Zero informazioni sensibili'}</li>
+                    <li>• <span className="text-green-600">✓</span> {router.locale === 'en' ? 'Full GDPR compliance' : 'Piena conformità GDPR'}</li>
+                  </ul>
+                </div>
+              </div>
+              
+              <div className="bg-white p-4 rounded border border-gray-200">
+                <h4 className="font-semibold text-gray-800 mb-2">
+                  🎯 {router.locale === 'en' ? 'How We Protect Privacy and IP' : 'Come Proteggiamo Privacy e IP'}
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                  <div className="text-center">
+                    <div className="bg-blue-100 p-2 rounded-full w-12 h-12 mx-auto mb-2 flex items-center justify-center">
+                      <Eye size={20} className="text-blue-600" />
+                    </div>
+                    <span className="font-medium text-gray-800">
+                      {router.locale === 'en' ? 'Only Public Data' : 'Solo Dati Pubblici'}
+                    </span>
+                    <p className="text-gray-600 mt-1">
+                      {router.locale === 'en' ? 'Never confidential or proprietary information' : 'Mai informazioni riservate o confidenziali'}
+                    </p>
+                  </div>
+                  <div className="text-center">
+                    <div className="bg-green-100 p-2 rounded-full w-12 h-12 mx-auto mb-2 flex items-center justify-center">
+                      <Shield size={20} className="text-green-600" />
+                    </div>
+                    <span className="font-medium text-gray-800">
+                      {router.locale === 'en' ? 'Total Anonymity' : 'Anonimato Totale'}
+                    </span>
+                    <p className="text-gray-600 mt-1">
+                      {router.locale === 'en' ? 'No identifying reference maintained' : 'Nessun riferimento identificativo mantenuto'}
+                    </p>
+                  </div>
+                  <div className="text-center">
+                    <div className="bg-purple-100 p-2 rounded-full w-12 h-12 mx-auto mb-2 flex items-center justify-center">
+                      <Lock size={20} className="text-purple-600" />
+                    </div>
+                    <span className="font-medium text-gray-800">
+                      {router.locale === 'en' ? 'IP Protection' : 'IP Protection'}
+                    </span>
+                    <p className="text-gray-600 mt-1">
+                      {router.locale === 'en' ? 'Complete respect for intellectual property' : 'Rispetto completo della proprietà intellettuale'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Enhanced Alpha Testing Guide */}
+          <div className="methodology-section mb-8">
+            <div className="flex items-center gap-3 mb-6">
+              <Users className="text-orange-600" size={24} />
+              <h2 className="text-2xl font-bold text-gray-900">
+                🧪 {router.locale === 'en' ? 'Alpha Testing Phase - Your Experience' : 'Alpha Testing Phase - La Tua Esperienza'}
+              </h2>
+            </div>
+            
+            <div className="grid md:grid-cols-2 gap-6 mb-6">
+              <div className="bg-green-50 p-4 rounded-lg border border-green-200">
+                <h3 className="font-bold text-green-800 mb-3">
+                  ✅ {router.locale === 'en' ? '100% Operational System' : 'Sistema Completamente Operativo'}
+                </h3>
+                <ul className="space-y-2 text-sm">
+                  <li>• <strong>
+                    {router.locale === 'en' ? '3-step methodology' : 'Metodologia 3-step'}
+                  </strong> {router.locale === 'en' ? '100% functional' : 'funzionante al 100%'}</li>
+                  <li>• <strong>
+                    {router.locale === 'en' ? '200+ case histories' : '200+ case histories'}
+                  </strong> {router.locale === 'en' ? 'from verified public sources' : 'da fonti pubbliche verificate'}</li>
+                  <li>• <strong>
+                    {router.locale === 'en' ? 'Advanced scoring' : 'Scoring avanzato'}
+                  </strong> {router.locale === 'en' ? 'with validation questions' : 'con validation questions'}</li>
+                  <li>• <strong>
+                    {router.locale === 'en' ? 'Bilingual support' : 'Supporto bilingue'}
+                  </strong> {router.locale === 'en' ? 'IT/EN complete' : 'IT/EN completo'}</li>
+                  <li>• <strong>
+                    {router.locale === 'en' ? 'Optimized performance:' : 'Performance ottimizzate:'}
+                  </strong> {router.locale === 'en' ? '19s first query, 2s cached' : '19s prima query, 2s cached'}</li>
+                </ul>
+              </div>
+              
+              <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                <h3 className="font-bold text-blue-800 mb-3">
+                  📊 {router.locale === 'en' ? 'How We\'re Improving' : 'Come Stiamo Migliorando'}
+                </h3>
+                <ul className="space-y-2 text-sm">
+                  <li>• <strong>
+                    {router.locale === 'en' ? 'User feedback:' : 'User feedback:'}
+                  </strong> {router.locale === 'en' ? 'gathering suggestions for UX' : 'raccogliamo suggerimenti per UX'}</li>
+                  <li>• <strong>
+                    {router.locale === 'en' ? 'Performance monitoring:' : 'Performance monitoring:'}
+                  </strong> {router.locale === 'en' ? 'optimal response times' : 'tempi di risposta ottimali'}</li>
+                  <li>• <strong>
+                    {router.locale === 'en' ? 'Content quality:' : 'Content quality:'}
+                  </strong> {router.locale === 'en' ? 'continuous analysis improvement' : 'miglioramento continuo analisi'}</li>
+                  <li>• <strong>
+                    {router.locale === 'en' ? 'Feature enhancement:' : 'Feature enhancement:'}
+                  </strong> {router.locale === 'en' ? 'new functionalities based on usage' : 'nuove funzionalità basate su usage'}</li>
+                </ul>
+              </div>
+            </div>
+            
+            <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+              <h3 className="font-semibold text-orange-900 mb-2">
+                🎯 {router.locale === 'en' ? 'Your Contribution as Alpha Tester' : 'Il Tuo Contributo Come Alpha Tester'}
+              </h3>
+              <p className="text-orange-800 text-sm mb-3">
+                {router.locale === 'en' 
+                  ? 'Your experience helps us perfect the system. Here\'s how you contribute:'
+                  : 'La tua esperienza ci aiuta a perfezionare il sistema. Ecco come contribuisci:'
+                }
+              </p>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
+                <div className="bg-white p-3 rounded border border-orange-200">
+                  <span className="font-medium text-orange-900">
+                    📝 {router.locale === 'en' ? 'Usage Patterns' : 'Usage Patterns'}
+                  </span>
+                  <p className="text-orange-700 mt-1">
+                    {router.locale === 'en' 
+                      ? 'Your usage patterns (anonymous) guide us in improvements'
+                      : 'I tuoi pattern di utilizzo (anonimi) ci guidano nei miglioramenti'
+                    }
+                  </p>
+                </div>
+                <div className="bg-white p-3 rounded border border-orange-200">
+                  <span className="font-medium text-orange-900">
+                    ⚡ {router.locale === 'en' ? 'Performance Feedback' : 'Performance Feedback'}
+                  </span>
+                  <p className="text-orange-700 mt-1">
+                    {router.locale === 'en' 
+                      ? 'We monitor response times for optimizations'
+                      : 'Monitoriamo tempi di risposta per ottimizzazioni'
+                    }
+                  </p>
+                </div>
+                <div className="bg-white p-3 rounded border border-orange-200">
+                  <span className="font-medium text-orange-900">
+                    🎯 {router.locale === 'en' ? 'Feature Validation' : 'Feature Validation'}
+                  </span>
+                  <p className="text-orange-700 mt-1">
+                    {router.locale === 'en' 
+                      ? 'Your engagement validates the effectiveness of features'
+                      : 'Il tuo engagement valida l\'efficacia delle funzionalità'
+                    }
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Original Alpha Testing Guide for Known Issues */}
           <section className="bg-orange-50 rounded-lg border border-orange-200 p-6">
             <h2 className="text-2xl font-bold text-orange-900 mb-4 flex items-center gap-2">
               <MessageCircle className="text-orange-600" size={24} />
-              {router.locale === 'en' ? 'Alpha Testing Guide' : 'Guida Alpha Testing'}
+              {router.locale === 'en' ? 'Known Issues & Testing Flow' : 'Problemi Noti & Flusso di Test'}
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* What's Working */}

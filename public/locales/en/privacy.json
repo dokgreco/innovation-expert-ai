@@ -44,5 +44,28 @@
     "title": "Policy Updates",
     "description": "This policy may be updated periodically to reflect any changes in the service.",
     "lastUpdated": "Last updated: August 2025"
+  },
+  "alphaTesting": {
+    "title": "Alpha Testing Phase",
+    "description": "You are using Innovation Expert AI in Alpha Testing Phase. The system is completely operational and secure, but we are gathering feedback to optimize the user experience.",
+    "fullyOperational": "Fully Operational",
+    "secureProcessing": "Secure Processing", 
+    "feedbackCollection": "Feedback Collection"
+  },
+  "dataTransparency": {
+    "title": "Data Source Transparency",
+    "description": "Complete transparency on data sources used for analysis generation:",
+    "proprietaryMethodology": "Proprietary methodology based on 200+ verified case histories",
+    "publicData": "Public data and industry best practices",
+    "noPersonalData": "No personal or sensitive project data stored",
+    "sessionBased": "Session-based processing only"
+  },
+  "vercelAnalytics": {
+    "title": "Vercel Analytics",
+    "description": "This application uses Vercel Analytics to monitor performance and improve user experience:",
+    "performanceMonitoring": "Performance and loading time monitoring",
+    "errorTracking": "Technical error tracking for system improvements", 
+    "noPersonalData": "No personal data collection or user tracking",
+    "aggregatedOnly": "Only aggregated and anonymous usage statistics"
   }
 }
