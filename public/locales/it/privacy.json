@@ -44,5 +44,59 @@
     "title": "Aggiornamenti dell'Informativa",
     "description": "Questa informativa potrebbe essere aggiornata periodicamente per riflettere eventuali cambiamenti nel servizio.",
     "lastUpdated": "Ultimo aggiornamento: Agosto 2025"
+  },
+  "alphaTesting": {
+    "title": "Alpha Testing Phase",
+    "description": "Stai utilizzando Innovation Expert AI in Alpha Testing Phase. Il sistema è completamente operativo e sicuro, ma stiamo raccogliendo feedback per ottimizzare l'esperienza utente.",
+    "fullyOperational": "Sistema 100% operativo",
+    "secureProcessing": "Dati sempre privati", 
+    "feedbackCollection": "Feedback per miglioramenti"
+  },
+  "dataTransparency": {
+    "title": "Trasparenza sui Dati di Riferimento",
+    "description": "Origine e Natura dei Nostri Dati",
+    "proprietaryMethodology": "Innovation Expert AI utilizza un database proprietario di 200+ case histories per fornire analisi comparative e best practices. Ogni dato proviene esclusivamente da fonti pubbliche ed è stato completamente anonimizzato.",
+    "publicData": "Dati pubblici e best practices del settore",
+    "noPersonalData": "Nessun dato personale o sensibile dei progetti memorizzato",
+    "sessionBased": "Elaborazione solo basata su sessione"
+  },
+  "vercelAnalytics": {
+    "title": "Analytics e Performance Monitoring",
+    "description": "Questa applicazione utilizza Vercel Analytics per monitorare le performance e migliorare l'esperienza utente:",
+    "performanceMonitoring": "Monitoraggio performance e tempi di caricamento",
+    "errorTracking": "Tracciamento errori tecnici per miglioramenti del sistema", 
+    "noPersonalData": "Nessuna raccolta dati personali o tracciamento utenti",
+    "aggregatedOnly": "Solo statistiche di utilizzo aggregate e anonime",
+    "useOfVercel": "Utilizzo di Vercel Analytics",
+    "useDescription": "Per garantire la migliore esperienza possibile, utilizziamo Vercel Analytics per:",
+    "performanceMonitoringDetailed": "Performance monitoring:",
+    "performanceDesc": "tempi di risposta e stabilità del sistema",
+    "errorTrackingDetailed": "Error tracking:",
+    "errorDesc": "identificazione problemi tecnici per risoluzione rapida",
+    "usagePatternsDetailed": "Usage patterns:",
+    "usageDesc": "analisi aggregate (senza dati personali) per miglioramenti UX",
+    "alphaTestingInsights": "Alpha testing insights:",
+    "alphaDesc": "feedback anonimi per ottimizzazione features",
+    "privacyGuarantee": "Privacy Guarantee:",
+    "gdprCompliant": "Vercel Analytics è completamente GDPR-compliant e non raccoglie dati personali. Monitoriamo solo metriche tecniche aggregate per migliorare performance e stabilità."
+  },
+  "alphaTestingGuide": "Guida Alpha Testing completa →",
+  "dataSourcesUsed": {
+    "whatWeUse": "Cosa Utilizziamo",
+    "verifiedSources": "Fonti pubbliche verificate:",
+    "verifiedSourcesDesc": "comunicati stampa, siti web ufficiali, report aziendali pubblici",
+    "anonymizedInfo": "Informazioni anonimizzate:",
+    "anonymizedInfoDesc": "tutti i riferimenti identificativi rimossi o generalizzati",
+    "sectorialPractices": "Best practices settoriali:",
+    "sectorialPracticesDesc": "pattern estratti da analisi aggregate del mercato",
+    "benchmarkMetrics": "Metriche di benchmark:",
+    "benchmarkMetricsDesc": "dati di performance standardizzati per settore"
+  },
+  "dataSourcesNeverUsed": {
+    "whatWeNeverUse": "Cosa NON Utilizziamo Mai",
+    "confidentialInfo": "Informazioni riservate o confidenziali di alcuna azienda",
+    "sensitiveData": "Dati sensibili, proprietari o non autorizzati",
+    "personalInfo": "Informazioni personali identificabili",
+    "tradeSecrets": "Segreti commerciali o IP protetta"
   }
 }

@@ -61,11 +61,42 @@
     "sessionBased": "Session-based processing only"
   },
   "vercelAnalytics": {
-    "title": "Vercel Analytics",
+    "title": "Analytics and Performance Monitoring",
     "description": "This application uses Vercel Analytics to monitor performance and improve user experience:",
     "performanceMonitoring": "Performance and loading time monitoring",
     "errorTracking": "Technical error tracking for system improvements", 
     "noPersonalData": "No personal data collection or user tracking",
-    "aggregatedOnly": "Only aggregated and anonymous usage statistics"
+    "aggregatedOnly": "Only aggregated and anonymous usage statistics",
+    "useOfVercel": "Use of Vercel Analytics",
+    "useDescription": "To ensure the best possible experience, we use Vercel Analytics for:",
+    "performanceMonitoringDetailed": "Performance monitoring:",
+    "performanceDesc": "response times and system stability",
+    "errorTrackingDetailed": "Error tracking:",
+    "errorDesc": "identification of technical issues for rapid resolution",
+    "usagePatternsDetailed": "Usage patterns:",
+    "usageDesc": "aggregate analysis (without personal data) for UX improvements",
+    "alphaTestingInsights": "Alpha testing insights:",
+    "alphaDesc": "anonymous feedback for feature optimization",
+    "privacyGuarantee": "Privacy Guarantee:",
+    "gdprCompliant": "Vercel Analytics is completely GDPR-compliant and does not collect personal data. We monitor only aggregate technical metrics to improve performance and stability."
+  },
+  "alphaTestingGuide": "Complete Alpha Testing Guide →",
+  "dataSourcesUsed": {
+    "whatWeUse": "What We Use",
+    "verifiedSources": "Verified public sources:",
+    "verifiedSourcesDesc": "press releases, official websites, public company reports",
+    "anonymizedInfo": "Anonymized information:",
+    "anonymizedInfoDesc": "all identifying references removed or generalized",
+    "sectorialPractices": "Sectorial best practices:",
+    "sectorialPracticesDesc": "patterns extracted from aggregate market analysis",
+    "benchmarkMetrics": "Benchmark metrics:",
+    "benchmarkMetricsDesc": "standardized performance data by sector"
+  },
+  "dataSourcesNeverUsed": {
+    "whatWeNeverUse": "What We NEVER Use",
+    "confidentialInfo": "Confidential or proprietary information from any company",
+    "sensitiveData": "Sensitive, proprietary or unauthorized data",
+    "personalInfo": "Personally identifiable information",
+    "tradeSecrets": "Trade secrets or protected IP"
   }
 }

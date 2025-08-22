@@ -235,7 +235,21 @@
       "title": "Database delle Conoscenze",
       "description": "Il nostro database proprietario include:",
       "types": "Tipologie di Case Studies",
-      "sectors": "Settori Coperti"
+      "sectors": "Settori Coperti",
+      "caseStudyTypes": [
+        "Startup unicorno e scale-up di successo",
+        "Innovazioni corporate e intrapreneurship",
+        "Pivot strategici e trasformazioni digitali",
+        "Casi di fallimento e lezioni apprese",
+        "Breakthrough tecnologici settoriali"
+      ],
+      "sectorsCovered": [
+        "FinTech, InsurTech, RegTech",
+        "HealthTech, MedTech, BioTech",
+        "IoT, Industry 4.0, Smart Cities",
+        "E-commerce, Retail, MarTech",
+        "CleanTech, Energy, Sustainability"
+      ]
     },
     "tips": {
       "title": "Tips per Risultati Ottimali",

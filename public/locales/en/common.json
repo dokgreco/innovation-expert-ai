@@ -235,7 +235,21 @@
       "title": "Knowledge Database",
       "description": "Our proprietary database includes:",
       "types": "Case Study Types",
-      "sectors": "Covered Sectors"
+      "sectors": "Covered Sectors",
+      "caseStudyTypes": [
+        "Unicorn startups and successful scale-ups",
+        "Corporate innovations and intrapreneurship",
+        "Strategic pivots and digital transformations",
+        "Failure cases and lessons learned",
+        "Sectoral technology breakthroughs"
+      ],
+      "sectorsCovered": [
+        "FinTech, InsurTech, RegTech",
+        "HealthTech, MedTech, BioTech",
+        "IoT, Industry 4.0, Smart Cities",
+        "E-commerce, Retail, MarTech",
+        "CleanTech, Energy, Sustainability"
+      ]
     },
     "tips": {
       "title": "Tips for Optimal Results",

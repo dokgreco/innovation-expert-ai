@@ -67,9 +67,12 @@ export default function Istruzioni() {
                 </p>
               </div>
             </div>
-            <a href="/privacy" className="text-green-600 hover:text-green-800 underline text-sm font-medium whitespace-nowrap">
+            <button 
+              onClick={() => router.push('/privacy')}
+              className="text-green-600 hover:text-green-800 underline text-sm font-medium whitespace-nowrap"
+            >
               {router.locale === 'en' ? 'Complete information →' : 'Informativa completa →'}
-            </a>
+            </button>
           </div>
         </div>
       </div>
@@ -219,21 +222,17 @@ export default function Istruzioni() {
                 <div>
                   <h4 className="font-semibold text-gray-900 mb-2">{t('instructions.database.types')}</h4>
                   <ul className="space-y-1 text-gray-700 text-sm">
-                    <li>• Startup unicorno e scale-up di successo</li>
-                    <li>• Innovazioni corporate e intrapreneurship</li>
-                    <li>• Pivot strategici e trasformazioni digitali</li>
-                    <li>• Casi di fallimento e lezioni apprese</li>
-                    <li>• Breakthrough tecnologici settoriali</li>
+                    {t('instructions.database.caseStudyTypes', { returnObjects: true }).map((type, idx) => (
+                      <li key={idx}>• {type}</li>
+                    ))}
                   </ul>
                 </div>
                 <div>
                   <h4 className="font-semibold text-gray-900 mb-2">{t('instructions.database.sectors')}</h4>
                   <ul className="space-y-1 text-gray-700 text-sm">
-                    <li>• FinTech, InsurTech, RegTech</li>
-                    <li>• HealthTech, MedTech, BioTech</li>
-                    <li>• IoT, Industry 4.0, Smart Cities</li>
-                    <li>• E-commerce, Retail, MarTech</li>
-                    <li>• CleanTech, Energy, Sustainability</li>
+                    {t('instructions.database.sectorsCovered', { returnObjects: true }).map((sector, idx) => (
+                      <li key={idx}>• {sector}</li>
+                    ))}
                   </ul>
                 </div>
               </div>

@@ -36,32 +36,29 @@ export default function Privacy() {
             <div className="flex items-center gap-2 mb-2">
               <span className="text-2xl">🧪</span>
               <h3 className="font-semibold text-orange-900">
-                {router.locale === 'en' ? 'Alpha Testing Phase' : 'Alpha Testing Phase'}
+                {t('alphaTesting.title')}
               </h3>
             </div>
             <p className="text-orange-800 mb-3">
-              {router.locale === 'en' 
-                ? 'You are using Innovation Expert AI in Alpha Testing Phase. The system is completely operational and secure, but we are gathering feedback to optimize the user experience.'
-                : 'Stai utilizzando Innovation Expert AI in Alpha Testing Phase. Il sistema è completamente operativo e sicuro, ma stiamo raccogliendo feedback per ottimizzare l\'esperienza utente.'
-              }
+              {t('alphaTesting.description')}
             </p>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
               <div className="bg-white p-3 rounded border border-orange-200">
                 <span className="text-green-600">✅</span>
                 <span className="ml-2">
-                  {router.locale === 'en' ? '100% operational system' : 'Sistema 100% operativo'}
+                  {t('alphaTesting.fullyOperational')}
                 </span>
               </div>
               <div className="bg-white p-3 rounded border border-orange-200">
                 <span className="text-green-600">✅</span>
                 <span className="ml-2">
-                  {router.locale === 'en' ? 'Always private data' : 'Dati sempre privati'}
+                  {t('alphaTesting.secureProcessing')}
                 </span>
               </div>
               <div className="bg-white p-3 rounded border border-orange-200">
                 <span className="text-blue-600">📊</span>
                 <span className="ml-2">
-                  {router.locale === 'en' ? 'Feedback for improvements' : 'Feedback per miglioramenti'}
+                  {t('alphaTesting.feedbackCollection')}
                 </span>
               </div>
             </div>
@@ -69,7 +66,7 @@ export default function Privacy() {
               href="/istruzioni" 
               className="inline-block mt-3 text-orange-600 hover:text-orange-800 underline text-sm"
             >
-              {router.locale === 'en' ? 'Complete Alpha Testing Guide →' : 'Guida Alpha Testing completa →'}
+              {t('alphaTestingGuide')}
             </a>
           </div>
 
@@ -120,19 +117,16 @@ export default function Privacy() {
             <div className="flex items-center gap-3 mb-4">
               <Database className="text-indigo-600" size={24} />
               <h2 className="text-2xl font-bold text-gray-900">
-                {router.locale === 'en' ? 'Transparency on Reference Data' : 'Trasparenza sui Dati di Riferimento'}
+                {t('dataTransparency.title')}
               </h2>
             </div>
             
             <div className="bg-blue-50 border-l-4 border-blue-500 p-4 mb-6">
               <p className="font-semibold mb-2 text-blue-900">
-                {router.locale === 'en' ? 'Origin and Nature of Our Data' : 'Origine e Natura dei Nostri Dati'}
+                {t('dataTransparency.description')}
               </p>
               <p className="text-blue-800">
-                {router.locale === 'en' 
-                  ? 'Innovation Expert AI uses a proprietary database of 200+ case histories to provide comparative analysis and best practices. All data comes exclusively from public sources and has been completely anonymized.'
-                  : 'Innovation Expert AI utilizza un database proprietario di 200+ case histories per fornire analisi comparative e best practices. Ogni dato proviene esclusivamente da fonti pubbliche ed è stato completamente anonimizzato.'
-                }
+                {t('dataTransparency.proprietaryMethodology')}
               </p>
             </div>
 
@@ -140,55 +134,43 @@ export default function Privacy() {
               <div className="bg-green-50 p-4 rounded-lg border border-green-200">
                 <h3 className="font-bold text-green-800 mb-3 flex items-center gap-2">
                   <CheckCircle size={20} />
-                  {router.locale === 'en' ? 'What We Use' : 'Cosa Utilizziamo'}
+                  {t('dataSourcesUsed.whatWeUse')}
                 </h3>
                 <ul className="space-y-2 text-sm">
                   <li className="flex items-start gap-2">
                     <span className="text-green-600 mt-1">•</span>
                     <span>
                       <strong>
-                        {router.locale === 'en' ? 'Verified public sources:' : 'Fonti pubbliche verificate:'}
+                        {t('dataSourcesUsed.verifiedSources')}
                       </strong>{' '}
-                      {router.locale === 'en' 
-                        ? 'press releases, official websites, public company reports'
-                        : 'comunicati stampa, siti web ufficiali, report aziendali pubblici'
-                      }
+                      {t('dataSourcesUsed.verifiedSourcesDesc')}
                     </span>
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="text-green-600 mt-1">•</span>
                     <span>
                       <strong>
-                        {router.locale === 'en' ? 'Anonymized information:' : 'Informazioni anonimizzate:'}
+                        {t('dataSourcesUsed.anonymizedInfo')}
                       </strong>{' '}
-                      {router.locale === 'en' 
-                        ? 'all identifying references removed or generalized'
-                        : 'tutti i riferimenti identificativi rimossi o generalizzati'
-                      }
+                      {t('dataSourcesUsed.anonymizedInfoDesc')}
                     </span>
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="text-green-600 mt-1">•</span>
                     <span>
                       <strong>
-                        {router.locale === 'en' ? 'Sectorial best practices:' : 'Best practices settoriali:'}
+                        {t('dataSourcesUsed.sectorialPractices')}
                       </strong>{' '}
-                      {router.locale === 'en' 
-                        ? 'patterns extracted from aggregate market analysis'
-                        : 'pattern estratti da analisi aggregate del mercato'
-                      }
+                      {t('dataSourcesUsed.sectorialPracticesDesc')}
                     </span>
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="text-green-600 mt-1">•</span>
                     <span>
                       <strong>
-                        {router.locale === 'en' ? 'Benchmark metrics:' : 'Metriche di benchmark:'}
+                        {t('dataSourcesUsed.benchmarkMetrics')}
                       </strong>{' '}
-                      {router.locale === 'en' 
-                        ? 'standardized performance data by sector'
-                        : 'dati di performance standardizzati per settore'
-                      }
+                      {t('dataSourcesUsed.benchmarkMetricsDesc')}
                     </span>
                   </li>
                 </ul>
@@ -197,43 +179,31 @@ export default function Privacy() {
               <div className="bg-red-50 p-4 rounded-lg border border-red-200">
                 <h3 className="font-bold text-red-800 mb-3 flex items-center gap-2">
                   <Shield size={20} />
-                  {router.locale === 'en' ? 'What We NEVER Use' : 'Cosa NON Utilizziamo Mai'}
+                  {t('dataSourcesNeverUsed.whatWeNeverUse')}
                 </h3>
                 <ul className="space-y-2 text-sm">
                   <li className="flex items-start gap-2">
                     <span className="text-red-600 mt-1">✕</span>
                     <span>
-                      {router.locale === 'en' 
-                        ? 'Confidential or proprietary information from any company'
-                        : 'Informazioni riservate o confidenziali di alcuna azienda'
-                      }
+                      {t('dataSourcesNeverUsed.confidentialInfo')}
                     </span>
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="text-red-600 mt-1">✕</span>
                     <span>
-                      {router.locale === 'en' 
-                        ? 'Sensitive, proprietary or unauthorized data'
-                        : 'Dati sensibili, proprietari o non autorizzati'
-                      }
+                      {t('dataSourcesNeverUsed.sensitiveData')}
                     </span>
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="text-red-600 mt-1">✕</span>
                     <span>
-                      {router.locale === 'en' 
-                        ? 'Personally identifiable information'
-                        : 'Informazioni personali identificabili'
-                      }
+                      {t('dataSourcesNeverUsed.personalInfo')}
                     </span>
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="text-red-600 mt-1">✕</span>
                     <span>
-                      {router.locale === 'en' 
-                        ? 'Trade secrets or protected IP'
-                        : 'Segreti commerciali o IP protetta'
-                      }
+                      {t('dataSourcesNeverUsed.tradeSecrets')}
                     </span>
                   </li>
                 </ul>
@@ -259,43 +229,37 @@ export default function Privacy() {
                 <div className="flex items-center gap-3 mb-4">
                   <BarChart3 className="text-purple-600" size={24} />
                   <h2 className="text-2xl font-bold text-gray-900">
-                    {router.locale === 'en' ? 'Analytics and Performance Monitoring' : 'Analytics e Performance Monitoring'}
+                    {t('vercelAnalytics.title')}
                   </h2>
                 </div>
                 
                 <div className="bg-purple-50 p-4 rounded-lg border border-purple-200 mb-4">
                   <h3 className="font-semibold text-purple-900 mb-2">
-                    📊 {router.locale === 'en' ? 'Use of Vercel Analytics' : 'Utilizzo di Vercel Analytics'}
+                    📊 {t('vercelAnalytics.useOfVercel')}
                   </h3>
                   <p className="text-purple-800 text-sm mb-3">
-                    {router.locale === 'en' 
-                      ? 'To ensure the best possible experience, we use Vercel Analytics for:'
-                      : 'Per garantire la migliore esperienza possibile, utilizziamo Vercel Analytics per:'
-                    }
+                    {t('vercelAnalytics.useDescription')}
                   </p>
                   <ul className="space-y-1 text-sm text-purple-800">
                     <li>• <strong>
-                      {router.locale === 'en' ? 'Performance monitoring:' : 'Performance monitoring:'}
-                    </strong> {router.locale === 'en' ? 'response times and system stability' : 'tempi di risposta e stabilità del sistema'}</li>
+                      {t('vercelAnalytics.performanceMonitoringDetailed')}
+                    </strong> {t('vercelAnalytics.performanceDesc')}</li>
                     <li>• <strong>
-                      {router.locale === 'en' ? 'Error tracking:' : 'Error tracking:'}
-                    </strong> {router.locale === 'en' ? 'identification of technical issues for rapid resolution' : 'identificazione problemi tecnici per risoluzione rapida'}</li>
+                      {t('vercelAnalytics.errorTrackingDetailed')}
+                    </strong> {t('vercelAnalytics.errorDesc')}</li>
                     <li>• <strong>
-                      {router.locale === 'en' ? 'Usage patterns:' : 'Usage patterns:'}
-                    </strong> {router.locale === 'en' ? 'aggregate analysis (without personal data) for UX improvements' : 'analisi aggregate (senza dati personali) per miglioramenti UX'}</li>
+                      {t('vercelAnalytics.usagePatternsDetailed')}
+                    </strong> {t('vercelAnalytics.usageDesc')}</li>
                     <li>• <strong>
-                      {router.locale === 'en' ? 'Alpha testing insights:' : 'Alpha testing insights:'}
-                    </strong> {router.locale === 'en' ? 'anonymous feedback for feature optimization' : 'feedback anonimi per ottimizzazione features'}</li>
+                      {t('vercelAnalytics.alphaTestingInsights')}
+                    </strong> {t('vercelAnalytics.alphaDesc')}</li>
                   </ul>
                 </div>
                 
                 <div className="bg-gray-50 p-4 rounded-lg text-sm">
-                  <p className="mb-2"><strong>🔒 {router.locale === 'en' ? 'Privacy Guarantee:' : 'Privacy Guarantee:'}</strong></p>
+                  <p className="mb-2"><strong>🔒 {t('vercelAnalytics.privacyGuarantee')}</strong></p>
                   <p className="text-gray-700">
-                    {router.locale === 'en' 
-                      ? 'Vercel Analytics is completely GDPR-compliant and does not collect personal data. We monitor only aggregate technical metrics to improve performance and stability.'
-                      : 'Vercel Analytics è completamente GDPR-compliant e non raccoglie dati personali. Monitoriamo solo metriche tecniche aggregate per migliorare performance e stabilità.'
-                    }
+                    {t('vercelAnalytics.gdprCompliant')}
                   </p>
                 </div>
               </div>
