@@ -6,7 +6,7 @@ function getLanguageInstructions(locale = 'it') {
   const instructions = {
     en: {
       expertRole: "You are an Innovation Expert with access to a proprietary methodology based on 200+ verified case histories.",
-      analysisLabel: "ANALYSIS BASED ON NOTION DATABASE",
+      analysisLabel: "ANALYSIS BASED ON PROPRIETARY METHODOLOGY",
       userQuery: "USER QUERY",
       step1Label: "STEP 1: STRATEGIC VERTICALS IDENTIFIED",
       step2Label: "STEP 2: MOST RELEVANT CASE HISTORIES",
@@ -27,7 +27,7 @@ function getLanguageInstructions(locale = 'it') {
       partnershipActivation: "Partnership Activation",
       validationQuestionsIntro: "IMPORTANT: Always generate 5 validation questions, one for each operational section (4-8).",
       criticalRules: "CRITICAL RULES:",
-      useOnlyNotion: "✓ USE ONLY information from Notion databases",
+      useOnlyNotion: "✓ USE methodology with consolidated evaluation frameworks",
       maintainAnonymity: "✓ MAINTAIN complete anonymity (Case #X, Vertical #Y)",
       alwaysOutput: "✓ Output ALWAYS in 9 sections + validation questions",
       actionablePoints: "✓ Each operational section must have 3-5 actionable points",
@@ -36,7 +36,7 @@ function getLanguageInstructions(locale = 'it') {
     },
     it: {
       expertRole: "Sei un Innovation Expert con accesso a una metodologia proprietaria basata su 200+ case histories verificate.",
-      analysisLabel: "ANALISI BASATA SU DATABASE NOTION",
+      analysisLabel: "ANALISI BASATA SU METODOLOGIA PROPRIETARIA",
       userQuery: "QUERY UTENTE",
       step1Label: "STEP 1: VERTICALI STRATEGICHE IDENTIFICATE",
       step2Label: "STEP 2: CASE HISTORIES PIÙ RILEVANTI",
@@ -57,7 +57,7 @@ function getLanguageInstructions(locale = 'it') {
       partnershipActivation: "Partnership Activation",
       validationQuestionsIntro: "IMPORTANTE: Genera SEMPRE 5 domande di validazione, una per ogni sezione operational (4-8).",
       criticalRules: "REGOLE CRITICHE:",
-      useOnlyNotion: "✓ USA SOLO informazioni dai database Notion",
+      useOnlyNotion: "✓ USA metodologia con framework di valutazione consolidati",
       maintainAnonymity: "✓ MANTIENI anonimato totale (Case #X, Vertical #Y)",
       alwaysOutput: "✓ Output SEMPRE in 9 sezioni + validation questions",
       actionablePoints: "✓ Ogni sezione operational deve avere 3-5 punti actionable",
@@ -84,7 +84,7 @@ function buildContextPrompt(languageInstructions, optimizedData, methodology, qu
   
   const instructions = buildInstructionsSection(languageInstructions, locale);
   
-  const footer = `${languageInstructions.criticalRules}\n${languageInstructions.useOnlyNotion}\n${languageInstructions.maintainAnonymity}\n${languageInstructions.alwaysOutput}\n${languageInstructions.actionablePoints}\n${languageInstructions.noScoring}\n\n${isEnglish ? 'Remember: you are analyzing' : 'Ricorda: stai analizzando'} "${query}" ${isEnglish ? 'based on real data from' : 'basandoti su dati reali da'} ${notionData.totalScanned || 0} ${isEnglish ? 'database elements' : 'elementi dei database'}.`;
+  const footer = `${languageInstructions.criticalRules}\n${languageInstructions.useOnlyNotion}\n${languageInstructions.maintainAnonymity}\n${languageInstructions.alwaysOutput}\n${languageInstructions.actionablePoints}\n${languageInstructions.noScoring}\n\n${isEnglish ? 'Remember: you are analyzing' : 'Ricorda: stai analizzando'} "${query}" ${isEnglish ? 'using proprietary methodology with consolidated evaluation frameworks.' : 'utilizzando metodologia proprietaria con framework di valutazione consolidati.'}`;
   
   return [header, step1, step2, step3, instructions, footer].join('\n\n');
 }
@@ -93,7 +93,7 @@ function buildContextPrompt(languageInstructions, optimizedData, methodology, qu
 function buildInstructionsSection(languageInstructions, locale) {
   const isEnglish = locale === 'en';
   
-  const part1 = `${languageInstructions.part1Label}\n\n1. ${languageInstructions.strategicVerticals}\n   - ${isEnglish ? 'TOP 3 verticals with % match' : 'TOP 3 verticali con % match'}\n   - ${isEnglish ? '50-80 words description per vertical' : 'Descrizione 50-80 parole per verticale'}\n   - ${isEnglish ? 'Format: "Vertical Framework #X (Sector)"' : 'Formato: "Vertical Framework #X (Sector)"'}\n\n2. ${languageInstructions.strategicPatterns}\n   ${isEnglish ? 'For EACH of the 6 dimensions, extract 3 insights (1 per TOP 3 vertical):' : 'Per OGNI delle 6 dimensioni, estrai 3 insights (1 per verticale TOP 3):'}\n   • Jobs-to-be-Done Alignment\n   • Technology Adoption & Validation\n   • Business Model Viability\n   • Market Type Strategy Execution\n   • Competing Factors Strength\n   • Target Synergies Potential\n\n3. ${languageInstructions.caseStudies}\n   - ${isEnglish ? 'TOP 3 ANONYMOUS cases with similarity %' : 'TOP 3 cases ANONIMI con similarity %'}\n   - ${isEnglish ? 'Format: "Case Study #X (Sector: Y)"' : 'Formato: "Case Study #X (Sector: Y)"'}\n   - ${isEnglish ? 'Key learning per each case' : 'Key learning per ogni caso'}`;
+  const part1 = `${languageInstructions.part1Label}\n\n1. ${languageInstructions.strategicVerticals}\n   - ${isEnglish ? 'TOP 3 verticals with % match' : 'TOP 3 verticali con % match'}\n   - ${isEnglish ? '50-80 words description per vertical' : 'Descrizione 50-80 parole per verticale'}\n   - ${isEnglish ? 'Format: "Vertical Framework #X (Sector)"' : 'Formato: "Vertical Framework #X (Sector)"'}\n\n2. ${languageInstructions.strategicPatterns}\n   ${isEnglish ? 'For EACH of the 6 dimensions, extract 3 insights (1 per TOP 3 vertical):' : 'Per OGNI delle 6 dimensioni, estrai 3 insights (1 per verticale TOP 3):'}\n   • Jobs-to-be-Done Alignment\n   • Technology Adoption & Validation\n   • Business Model Viability\n   • Market Type Strategy Execution\n   • Competing Factors Strength\n   • Target Synergies Potential\n\n3. ${languageInstructions.caseStudies}\n   - ${isEnglish ? 'TOP 3 ANONYMOUS cases' : 'TOP 3 cases ANONIMI'}\n   - ${isEnglish ? 'Format: "Case Study #X (Sector: Y)"' : 'Formato: "Case Study #X (Sector: Y)"'}\n   - ${isEnglish ? 'Key learning per each case' : 'Key learning per ogni caso'}`;
   
   const part2 = `${languageInstructions.part2Label} (${isEnglish ? 'Sections 4-8' : 'Sezioni 4-8'})\n${languageInstructions.operationalInsights}\n\n4. ${languageInstructions.jtbdTrends}\n   - ${isEnglish ? '3-5 bullet points on specific jobs identified and relevant market trends' : '3-5 bullet points su jobs specifici identificati e trend di mercato rilevanti'}\n   - ${isEnglish ? 'Focus on validation metrics and problem urgency' : 'Focus su metriche di validazione e urgenza del problema'}\n\n5. ${languageInstructions.competitiveCanvas}\n   - ${isEnglish ? '3-5 bullet points on competitive positioning and differentiation' : '3-5 bullet points su posizionamento competitivo e differenziazione'}\n   - ${isEnglish ? 'Analysis of direct and indirect competitors from the vertical' : 'Analisi dei competitor diretti e indiretti dal verticale'}\n\n6. ${languageInstructions.techValidation}\n   - ${isEnglish ? '3-5 bullet points on technology stack and validation approach' : '3-5 bullet points su stack tecnologico e approccio di validazione'}\n   - ${isEnglish ? 'Technical best practices from the identified vertical' : 'Best practices tecniche dal verticale identificato'}\n\n7. ${languageInstructions.processMetrics}\n   - ${isEnglish ? '3-5 bullet points on operational processes and key KPIs' : '3-5 bullet points su processi operativi e KPI chiave'}\n   - ${isEnglish ? 'Success metrics based on industry benchmarks' : 'Metriche di successo basate su benchmark del settore'}\n\n8. ${languageInstructions.partnershipActivation}\n   - ${isEnglish ? '3-5 bullet points on partnership strategies and channels' : '3-5 bullet points su strategie di partnership e canali'}\n   - ${isEnglish ? 'Types of strategic partners for the vertical' : 'Tipologie di partner strategici per il verticale'}`;
   
@@ -133,7 +133,7 @@ function formatCaseHistories(cases, locale = 'it') {
     const anonymizedTitle = `Case Study #${idx + 1} (${c.properties?.Classification || 'Innovation Case'})`;
     
     return `
-${idx + 1}. ${anonymizedTitle} (${locale === 'en' ? 'Similarity' : 'Similarity'}: ${c.relevanceScore?.toFixed(1)}%)
+${idx + 1}. ${anonymizedTitle}
    • ${locale === 'en' ? 'Description' : 'Description'}: ${description.substring(0, 150)}...
    • ${locale === 'en' ? 'Impact' : 'Impact'}: ${impact.substring(0, 100)}${impact.length > 100 ? '...' : ''}
    • ${locale === 'en' ? 'Sector' : 'Sector'}: ${c.properties?.Vertical || c.properties?.Industry || 'Tech Innovation'}`;
@@ -339,7 +339,22 @@ export default async function handler(req, res) {
     }
 
     const data = await response.json();
-    const analysis = data.content[0].text;
+    let analysis = data.content[0].text;
+    
+    // 🧹 CLEANUP: Remove structural duplications from Claude output
+    // Find VALIDATION QUESTIONS section and remove everything after it (including duplicated sections)
+    const validationIndex = analysis.lastIndexOf('VALIDATION QUESTIONS');
+    if (validationIndex !== -1) {
+      // Find the end of the validation questions by looking for the next numbered section
+      const afterValidation = analysis.substring(validationIndex);
+      const duplicateMatch = afterValidation.match(/VALIDATION QUESTIONS[\s\S]*?(\n\n?[4-8]\.\s)/);
+      if (duplicateMatch) {
+        // Cut off everything from the duplicate section
+        const cutPoint = validationIndex + duplicateMatch.index + duplicateMatch[0].length - duplicateMatch[1].length;
+        analysis = analysis.substring(0, cutPoint).trim();
+        SecureLogger.dev('🧹 Removed duplicated sections after VALIDATION QUESTIONS');
+      }
+    }
     
     // 🔍 DEBUG: Verifica output Claude
     SecureLogger.dev('📊 Claude response length:', analysis.length);
@@ -428,18 +443,33 @@ export default async function handler(req, res) {
 
     // PARSING DELLE 9 SEZIONI
     const extractSection = (text, marker) => {
-  // Pattern più preciso per fermarsi alla prossima sezione numerata (4-8) o alla PARTE 3
-  const regex = new RegExp(
-    `${marker}[\\s\\S]*?(?=\\n\\n?(?:4|5|6|7|8)\\.|\\n\\n?###\\s*(?:4|5|6|7|8)\\.|PARTE 3|$)`, 
-    'i'
-  );
-  const match = text.match(regex);
+  // Find first occurrence only
+  const firstIndex = text.indexOf(marker);
+  if (firstIndex === -1) return '';
+  
+  // Extract content from first occurrence
+  const textFromFirst = text.substring(firstIndex);
+  
+  // Enhanced regex to stop at duplications or next major section
+  let stopPattern;
+  
+  // For operational sections (4-8), stop at next section OR duplication pattern
+  if (marker.includes('Jobs-to-be-Done') || marker.includes('Competitive') || 
+      marker.includes('Technology') || marker.includes('Process') || marker.includes('Partnership')) {
+    stopPattern = `(?=\\n\\n?(?:[5-9]\\.|###\\s*[5-9]\\.|PARTE 3|## PART|4\\. Jobs-to-be-Done|5\\. Competitive|6\\. Technology|7\\. Process|8\\. Partnership)|$)`;
+  } else {
+    // For other sections, use original pattern
+    stopPattern = `(?=\\n\\n?(?:4|5|6|7|8)\\.|\\n\\n?###\\s*(?:4|5|6|7|8)\\.|PARTE 3|$)`;
+  }
+  
+  const regex = new RegExp(`${marker}[\\s\\S]*?${stopPattern}`, 'i');
+  const match = textFromFirst.match(regex);
   if (!match) return '';
   
-  // Rimuovi il marker e pulisci il contenuto
+  // Clean content
   let content = match[0].replace(marker, '').trim();
   
-  // Rimuovi eventuali numeri di sezione alla fine
+  // Remove trailing section numbers
   content = content.replace(/\n\n?(?:5|6|7|8)\.\s*.*$/s, '');
   
   return content;
@@ -505,16 +535,16 @@ const parsedSections = {
     // Prepare sources information
     const sources = [
       { 
-        title: `Database 1 - ${Math.floor(notionData.totalResults * 0.4)} entries`, 
-        id: process.env.NOTION_DATABASE_1 
+        title: "Proprietary Innovation Framework - Strategic Verticals", 
+        id: "framework-verticals" 
       },
       { 
-        title: `Database 2 - ${Math.floor(notionData.totalResults * 0.35)} entries`, 
-        id: process.env.NOTION_DATABASE_2 
+        title: "Proprietary Case Studies Database - Best Practices", 
+        id: "framework-cases" 
       },
       { 
-        title: `Database 3 - ${Math.floor(notionData.totalResults * 0.25)} entries`, 
-        id: process.env.NOTION_DATABASE_3 
+        title: "Consolidated Evaluation Methodology - Pattern Analysis", 
+        id: "framework-patterns" 
       }
     ];
 // Cache headers per Vercel
