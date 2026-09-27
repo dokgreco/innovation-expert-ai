@@ -357,8 +357,12 @@ export default async function handler(req, res) {
         "x-api-key": process.env.ANTHROPIC_API_KEY
       },
       body: JSON.stringify({
-        model: "claude-sonnet-4-20250514",
-        max_tokens: 4000,
+        // claude-sonnet-4-20250514 è stato ritirato (404): sostituto ufficiale claude-sonnet-5.
+        // Thinking disattivato per mantenere il comportamento di Sonnet 4; max_tokens +50%
+        // perché il nuovo tokenizer conta ~30% di token in più per lo stesso testo.
+        model: "claude-sonnet-5",
+        max_tokens: 6000,
+        thinking: { type: "disabled" },
         messages: [
           { role: "user", content: scoringPrompt }
         ]
@@ -372,7 +376,7 @@ export default async function handler(req, res) {
     }
 
     const claudeData = await claudeResponse.json();
-    const claudeScoringText = claudeData.content[0].text;
+    const claudeScoringText = claudeData.content.find(block => block.type === 'text')?.text || '';
 
     // 🔒 F.2.1.5 Security: Parse Claude response for risk assessment only
     const claudeRisks = extractRisksFromClaude(claudeScoringText, language);

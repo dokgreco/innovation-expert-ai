@@ -324,8 +324,12 @@ export default async function handler(req, res) {
         "x-api-key": process.env.ANTHROPIC_API_KEY
       },
       body: JSON.stringify({
-        model: "claude-sonnet-4-20250514",
-        max_tokens: 4000,
+        // claude-sonnet-4-20250514 è stato ritirato (404): sostituto ufficiale claude-sonnet-5.
+        // Thinking disattivato per mantenere il comportamento di Sonnet 4; max_tokens +50%
+        // perché il nuovo tokenizer conta ~30% di token in più per lo stesso testo.
+        model: "claude-sonnet-5",
+        max_tokens: 6000,
+        thinking: { type: "disabled" },
         messages: [
           { role: "user", content: contextPrompt }
         ]
@@ -339,7 +343,7 @@ export default async function handler(req, res) {
     }
 
     const data = await response.json();
-    let analysis = data.content[0].text;
+    let analysis = data.content.find(block => block.type === 'text')?.text || '';
     
     // 🧹 CLEANUP: Remove structural duplications from Claude output
     // Find VALIDATION QUESTIONS section and remove everything after it (including duplicated sections)
