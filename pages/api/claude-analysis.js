@@ -1,5 +1,6 @@
 // ========== HELPER FUNCTIONS PER METODOLOGIA 3-STEP ==========
 const { SecureLogger } = require('../../utils/secureLogger');
+const { CLAUDE_MODEL } = require('../../utils/claudeConfig');
 
 // Language-specific instructions function
 function getLanguageInstructions(locale = 'it') {
@@ -324,10 +325,10 @@ export default async function handler(req, res) {
         "x-api-key": process.env.ANTHROPIC_API_KEY
       },
       body: JSON.stringify({
-        // claude-sonnet-4-20250514 è stato ritirato (404): sostituto ufficiale claude-sonnet-5.
+        // Modello da utils/claudeConfig.js (env CLAUDE_MODEL, default claude-sonnet-5).
         // Thinking disattivato per mantenere il comportamento di Sonnet 4; max_tokens +50%
         // perché il nuovo tokenizer conta ~30% di token in più per lo stesso testo.
-        model: "claude-sonnet-5",
+        model: CLAUDE_MODEL,
         max_tokens: 6000,
         thinking: { type: "disabled" },
         messages: [
