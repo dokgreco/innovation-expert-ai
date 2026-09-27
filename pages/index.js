@@ -274,7 +274,7 @@ const handleSectionQuestion = async (section, question) => {
         locale: router.locale,
         analysisContext: {
           // NUOVO: Usa i dati reali dall'analisi
-          vertical: contextData.verticals || 'IoT Platform Solutions',
+          vertical: contextData.verticals || '',
           patterns: contextData.patterns || '',
           cases: contextData.cases || '',
           
@@ -381,7 +381,8 @@ if (!stepHistory.includes(2)) {
             insights: (notionData.insights || []).slice(0, 3),
             bestPractices: (notionData.bestPractices || []).slice(0, 3),
             results: (notionData.results || []).slice(0, 2),
-            methodology: notionData.methodology || "Metodologia proprietaria"
+            methodology: notionData.methodology || "Metodologia proprietaria",
+            metadata: notionData.metadata || {}
           },
           filters: selectedFilters
         })
@@ -411,8 +412,9 @@ if (!stepHistory.includes(2)) {
   timestamp: new Date(),
   sources: result.sources || [],
   parsedSections: result.parsedSections, // <-- AGGIUNGI QUESTA RIGA
+  dataCoverage: result.dataCoverage, // copertura del database per l'avviso in UI
   notionQuery: {
-    totalResults: notionData.totalResults || 0,
+    totalResults: notionData.metadata?.totalScanned || notionData.totalResults || 0,
     filtersApplied: selectedFilters.length
   }
 };
@@ -866,6 +868,18 @@ case 'partnership':
                   ? 'bg-red-50 text-red-800 border border-red-200'
                   : 'bg-white text-gray-800 border border-gray-200 shadow-sm'
               }`}>
+                {message.dataCoverage && (
+                  <div className={`mb-4 p-3 rounded-lg border text-sm ${
+                    message.dataCoverage.level === 'good'
+                      ? 'bg-indigo-50 border-indigo-200 text-indigo-800'
+                      : 'bg-amber-50 border-amber-200 text-amber-800'
+                  }`}>
+                    {t(`analysis.coverage.${message.dataCoverage.level}`, {
+                      verticals: message.dataCoverage.verticals,
+                      cases: message.dataCoverage.cases
+                    })}
+                  </div>
+                )}
                 <div className="text-sm leading-relaxed whitespace-pre-wrap">{message.content}</div>
 
                 {message.parsedSections && (

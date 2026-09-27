@@ -1,5 +1,44 @@
 const { CLAUDE_MODEL } = require('../../utils/claudeConfig');
 
+// Sezione Deep Dive -> campo di analysisContext inviato da pages/index.js
+const SECTION_CONTEXT = {
+  'jtbd-trends': { field: 'jtbdTrends', name: 'Jobs-to-be-Done & Market Trends' },
+  'competitive': { field: 'competitiveCanvas', name: 'Competitive Positioning Canvas' },
+  'tech-validation': { field: 'techValidation', name: 'Technology Adoption & Validation' },
+  'process-metrics': { field: 'processMetrics', name: 'Process & Metrics' },
+  'partnership': { field: 'partnership', name: 'Partnership Activation' }
+};
+
+function clipText(text, max) {
+  const clean = String(text || '').replace(/\s+/g, ' ').trim();
+  return clean.length > max ? clean.substring(0, max).trimEnd() + '…' : clean;
+}
+
+// Contesto reale dell'analisi già prodotta + regole di fondatezza (niente numeri inventati)
+function buildQaContext(analysisContext, section, isEnglish) {
+  const sectionInfo = SECTION_CONTEXT[section] || SECTION_CONTEXT['jtbd-trends'];
+  const items = [
+    [isEnglish ? "User's project" : "Progetto dell'utente", clipText(analysisContext.originalQuery, 500)],
+    [isEnglish ? 'Reference verticals' : 'Verticali di riferimento', clipText(analysisContext.vertical, 1200)],
+    [isEnglish ? `Analysis section "${sectionInfo.name}"` : `Sezione "${sectionInfo.name}" dell'analisi`, clipText(analysisContext[sectionInfo.field], 1500)],
+    [isEnglish ? 'Reference case studies' : 'Case studies di riferimento', clipText(analysisContext.cases, 800)]
+  ].filter(([, value]) => value);
+
+  const lines = items.length > 0
+    ? items.map(([label, value]) => `- ${label}: ${value}`).join('\n')
+    : (isEnglish ? '- No previous analysis available.' : '- Nessuna analisi precedente disponibile.');
+
+  return isEnglish
+    ? `ANALYSIS CONTEXT (already produced for this user):
+${lines}
+
+GROUNDING RULES: base the answer on this context. Do not attribute to the analysis or the database any case counts, percentages or data that do not appear above; if you use data or benchmarks from general knowledge, mark them with [general knowledge].`
+    : `CONTESTO DELL'ANALISI (già prodotta per questo utente):
+${lines}
+
+REGOLE DI FONDATEZZA: basa la risposta su questo contesto. Non attribuire all'analisi o al database numeri di casi, percentuali o dati che non compaiono qui sopra; se usi dati o benchmark di conoscenza generale, segnalali con [conoscenza generale].`;
+}
+
 // 🔒 F.2.1 Security: Rate Limiting Storage
 const rateLimitMap = new Map();
 
@@ -66,14 +105,12 @@ export default async function handler(req, res) {
 
     // V2 Section prompts aligned with 8-section structure - Multilingual
 const isEnglish = locale === 'en';
+const qaContext = buildQaContext(analysisContext, section, isEnglish);
 const sectionPrompts = {
   'jtbd-trends': isEnglish ? 
     `You are an Innovation Expert analyzing Jobs-to-be-Done & Market Trends.
 
-ANALYSIS CONTEXT V2:
-- Vertical: ${analysisContext.vertical || 'Not specified'}  
-- JTBD Patterns: ${analysisContext.patterns?.jtbd || 'Patterns to identify'}
-- Market Trends from case studies: ${analysisContext.cases?.length || 0} cases analyzed
+${qaContext}
 
 User asked: "${question}"
 
@@ -87,10 +124,7 @@ STRUCTURE THE RESPONSE:
 Keep response <150 words, ultra-specific for context.` :
     `Sei un Innovation Expert che analizza Jobs-to-be-Done & Market Trends.
 
-CONTESTO ANALISI V2:
-- Verticale: ${analysisContext.vertical || 'Non specificato'}
-- Pattern JTBD: ${analysisContext.patterns?.jtbd || 'Pattern da identificare'}  
-- Market Trends dai case studies: ${analysisContext.cases?.length || 0} casi analizzati
+${qaContext}
 
 L'utente ha chiesto: "${question}"
 
@@ -106,10 +140,7 @@ Mantieni risposta <150 parole, ultra-specifica per il contesto.`,
   'competitive': isEnglish ?
     `You are an Innovation Expert analyzing the Competitive Positioning Canvas.
 
-ANALYSIS CONTEXT V2:
-- Vertical: ${analysisContext.vertical || 'Not specified'}
-- Identified Competing Factors: ${analysisContext.patterns?.competitive || 'To be defined'}
-- Positioning vs case studies: TOP 3 differentiators
+${qaContext}
 
 User asked: "${question}"
 
@@ -123,10 +154,7 @@ STRUCTURE THE RESPONSE:
 Focus on actionable insights, not theory. Max 150 words.` :
     `Sei un Innovation Expert che analizza il Competitive Positioning Canvas.
 
-CONTESTO ANALISI V2:
-- Verticale: ${analysisContext.vertical || 'Non specificato'}
-- Competing Factors identificati: ${analysisContext.patterns?.competitive || 'Da definire'}
-- Posizionamento vs case studies: TOP 3 differenziatori
+${qaContext}
 
 L'utente ha chiesto: "${question}"
 
@@ -142,10 +170,7 @@ Focus su insights actionable, non teoria. Max 150 parole.`,
   'tech-validation': isEnglish ?
     `You are an Innovation Expert analyzing Technology Adoption & Validation.
 
-ANALYSIS CONTEXT V2:
-- Vertical Tech Stack: ${analysisContext.patterns?.technologies || 'To be defined'}
-- Success architectures: ${analysisContext.techPatterns || 'API-first, Cloud-native'}
-- Validation approach from case studies
+${qaContext}
 
 User asked: "${question}"
 
@@ -159,10 +184,7 @@ STRUCTURE THE RESPONSE:
 Respond with concrete choices, not generic options. Max 150 words.` :
     `Sei un Innovation Expert che analizza Technology Adoption & Validation.
 
-CONTESTO ANALISI V2:
-- Tech Stack verticale: ${analysisContext.patterns?.technologies || 'Da definire'}
-- Architetture di successo: ${analysisContext.techPatterns || 'API-first, Cloud-native'}
-- Validation approach dai case studies
+${qaContext}
 
 L'utente ha chiesto: "${question}"
 
@@ -178,10 +200,7 @@ Rispondi con scelte concrete, non opzioni generiche. Max 150 parole.`,
   'process-metrics': isEnglish ?
     `You are an Innovation Expert analyzing Process & Metrics (KPIs).
 
-ANALYSIS CONTEXT V2:
-- Vertical critical KPIs: ${analysisContext.patterns?.kpis || 'To be identified'}
-- Benchmarks from TOP case studies
-- Process excellence patterns
+${qaContext}
 
 User asked: "${question}"
 
@@ -195,10 +214,7 @@ STRUCTURE THE RESPONSE:
 Provide specific numbers and percentages. Max 150 words.` :
     `Sei un Innovation Expert che analizza Process & Metrics (KPIs).
 
-CONTESTO ANALISI V2:
-- KPI critici del verticale: ${analysisContext.patterns?.kpis || 'Da identificare'}
-- Benchmark dai TOP case studies
-- Process excellence patterns
+${qaContext}
 
 L'utente ha chiesto: "${question}"
 
@@ -214,10 +230,7 @@ Fornisci numeri e percentuali specifici. Max 150 parole.`,
   'partnership': isEnglish ?
     `You are an Innovation Expert analyzing Partnership Activation.
 
-ANALYSIS CONTEXT V2:
-- Vertical partner ecosystem: ${analysisContext.patterns?.partnerships || 'To be mapped'}
-- Synergies identified from case studies
-- Successful partnership models
+${qaContext}
 
 User asked: "${question}"
 
@@ -231,10 +244,7 @@ STRUCTURE THE RESPONSE:
 Be specific about company types, not generic. Max 150 words.` :
     `Sei un Innovation Expert che analizza Partnership Activation.
 
-CONTESTO ANALISI V2:
-- Partner ecosystem del verticale: ${analysisContext.patterns?.partnerships || 'Da mappare'}
-- Synergies identificate dai case studies
-- Partnership models di successo
+${qaContext}
 
 L'utente ha chiesto: "${question}"
 

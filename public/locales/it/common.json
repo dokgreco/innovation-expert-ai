@@ -35,7 +35,12 @@
     "completed": "✅ Analisi completata! Procedi con la validazione per generare lo scoring calibrato.",
     "notAvailable": "Sezione non disponibile. Fai prima un'analisi completa.",
     "generating": "Generando risposta...",
-    "error": "Errore nella generazione della risposta. Riprova."
+    "error": "Errore nella generazione della risposta. Riprova.",
+    "coverage": {
+      "good": "📚 Analisi basata sul database proprietario — verticali pertinenti: {{verticals}}, case history pertinenti: {{cases}}.",
+      "low": "⚠️ Copertura parziale del database — verticali pertinenti: {{verticals}}, case history pertinenti: {{cases}}. Dove i dati non bastano, l'analisi integra con conoscenza generale di settore, segnalata con [conoscenza generale].",
+      "none": "⚠️ Il database non contiene casi pertinenti per questa descrizione: l'analisi si basa sulla conoscenza generale di settore, non su case history reali. Per risultati più solidi indica il settore (es. EdTech, fintech, agritech)."
+    }
   },
   "scoring": {
     "title": "🎯 Innovation Score",
